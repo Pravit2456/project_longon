@@ -15,13 +15,13 @@ export default function Header() {
             className="h-10 w-10 object-cover rounded-full bg-white"
           />
           <span className="text-xl md:text-2xl font-semibold text-white tracking-tight">
-            smartsensor <span className="text-white">longon</span>
+            smartsensor <span className="text-white">longan</span>
           </span>
         </div>
 
         {/* ปุ่ม */}
         <button
-          onClick={() => navigate("/landing")}
+          onClick={() => navigate("/login")}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-full shadow px-4 py-2 transition"
         >
           <Leaf className="w-4 h-4" />

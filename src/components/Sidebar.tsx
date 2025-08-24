@@ -32,7 +32,7 @@ export default function Sidebar() {
             alt="DSS ลำไย"
             className="h-10 w-10 object-cover rounded-full"
           />
-          <span className="text-xl font-sans">DSS ลำไย</span>
+          <span className="text-xl font-sans">Smartsensor longan</span>
         </div>
 
         <nav className="flex flex-col gap-2 px-4">

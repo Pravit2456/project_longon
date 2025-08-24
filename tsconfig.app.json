@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "backend/controllers", "backend/server.js", "backend/routes/users.js", "backend/test-db.cjs", "backend/db.cjs"]
 }

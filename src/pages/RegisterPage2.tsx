@@ -1,59 +1,69 @@
-// src/pages/Register.tsx
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Register2() {
+export default function RegisterPage2() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:3000/api/users/register", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, role: "provider" }) // ✅ role = provider
+      });
+
+      if (response.ok) {
+        navigate('/login2'); // ไปหน้า login ของผู้ให้บริการ
+      } else {
+        const error = await response.json();
+        alert('เกิดข้อผิดพลาด: ' + error.message);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์');
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-green-50 flex items-center justify-center">
-      <div className="bg-white shadow-lg rounded-xl w-full max-w-md p-8">
-        <h1 className="text-2xl font-semibold text-green-800 mb-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <form onSubmit={handleRegister} className="bg-white p-8 rounded shadow-md w-96">
+        <h2 className="text-2xl font-bold mb-6 text-center">สมัครสมาชิก (ผู้ให้บริการ)</h2>
+        <input
+          type="text"
+          placeholder="ชื่อผู้ใช้"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded"
+          required
+        />
+        <input
+          type="email"
+          placeholder="อีเมล"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded"
+          required
+        />
+        <input
+          type="password"
+          placeholder="รหัสผ่าน"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded"
+          required
+        />
+        <button type="submit" className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800">
           สมัครสมาชิก
-        </h1>
-
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้</label>
-            <input
-              type="text"
-              placeholder="ชื่อของคุณ"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">อีเมล</label>
-            <input
-              type="email"
-              placeholder="your@email.com"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            สมัครสมาชิก
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          มีบัญชีอยู่แล้ว?{" "}
-          <button onClick={() => navigate("/login2")} className="text-green-700 font-medium">
-            เข้าสู่ระบบ
-          </button>
+        </button>
+        <p className="text-center text-sm mt-4">
+          มีบัญชีแล้ว? <span className="text-green-700 cursor-pointer" onClick={() => navigate('/login2')}>เข้าสู่ระบบ</span>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

@@ -1,16 +1,9 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
-  FiBell,
-  FiCalendar,
-  FiClock,
-  FiMapPin,
-  FiTag,
-  FiTool,
-  FiTrendingUp,
-  FiHome,
-  FiClipboard,
-  FiSettings,
-  FiUser,
+  FiBell, FiCalendar, FiClock, FiMapPin,
+  FiTag, FiTool, FiTrendingUp, FiHome,
+  FiClipboard, FiSettings, FiUser
 } from "react-icons/fi";
 import { FaLeaf } from "react-icons/fa";
 
@@ -28,13 +21,13 @@ type Job = {
 type Equip = { name: string; desc: string; status: "พร้อมใช้งาน" | "ต้องซ่อม"; tone: "green" | "yellow" };
 type Notice = { title: string; desc: string; tone: "blue" | "green" | "orange" };
 
+// ==== ข้อมูลเหมือนเดิม ====
 const stats: Stat[] = [
   { label: "สถานะปัจจุบัน", value: "พร้อมรับงาน", icon: <FiHome />, wrap: "bg-emerald-50 text-emerald-700" },
   { label: "งานรอดำเนินการ", value: "5", icon: <FiClipboard />, wrap: "bg-sky-50 text-sky-700" },
   { label: "รายได้เดือนนี้", value: "฿12,500", icon: <FiTrendingUp />, wrap: "bg-amber-50 text-amber-700", valueCls: "tabular-nums" },
   { label: "คะแนนรีวิว", value: "4.8", icon: <FaLeaf />, wrap: "bg-orange-50 text-orange-700" },
 ];
-
 
 const jobs: Job[] = [
   {
@@ -70,6 +63,7 @@ const notices: Notice[] = [
   { title: "รีวิวใหม่", desc: "คุณสมชายให้ 5 ดาว", tone: "orange" },
 ];
 
+// ==== ServerPage ====
 export default function ServerPage() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -84,11 +78,12 @@ export default function ServerPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600">
-            <a className="flex items-center gap-2 text-emerald-600 fonts-sans" href="#"><FiHome /> แดชบอร์ด</a>
-            <a className="hover:text-slate-900" href="#">ปฏิทินงาน</a>
-            <a className="hover:text-slate-900" href="#">อุปกรณ์</a>
-            <a className="hover:text-slate-900" href="#">ราคา</a>
-            <a className="hover:text-slate-900" href="#">โปรไฟล์</a>
+            {/* Navbar ใช้ Link ไปหน้าอื่น */}
+            <Link className="flex items-center gap-2 text-emerald-600" to="/dashboard"><FiHome /> แดชบอร์ด</Link>
+            <Link className="flex items-center gap-2 hover:text-slate-900" to="/calendarserver"><FiCalendar /> ปฏิทินงาน</Link>
+            <Link className="flex items-center gap-2 hover:text-slate-900" to="/devices"><FiTool /> อุปกรณ์</Link>
+            <Link className="flex items-center gap-2 hover:text-slate-900" to="/pricing"><FiTag /> ราคา</Link>
+            <Link className="flex items-center gap-2 hover:text-slate-900" to="/profileview"><FiSettings /> โปรไฟล์</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -97,12 +92,8 @@ export default function ServerPage() {
               <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500" />
             </button>
             <div className="flex items-center gap-2">
-              <img
-                alt="avatar"
-                src="https://i.pravatar.cc/40?img=68"
-                className="h-8 w-8 rounded-full"
-              />
-              <span className="hidden sm:block text-sm text-slate-700">สมชาย ใจดี</span>
+              <img alt="avatar" src="https://i.pravatar.cc/40?img=68" className="h-8 w-8 rounded-full"/>
+              <span className="hidden sm:flex items-center gap-1 text-sm text-slate-700"><FiUser /> สมชาย ใจดี</span>
             </div>
           </div>
         </div>
@@ -112,37 +103,24 @@ export default function ServerPage() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {stats.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
+          {stats.map((s) => <StatCard key={s.label} {...s} />)}
         </div>
-
 
         {/* Current jobs */}
         <Section title="งานปัจจุบัน">
           <div className="divide-y">
-            {jobs.map((j) => (
-              <JobItem key={j.title} {...j} />
-            ))}
+            {jobs.map((j) => <JobItem key={j.title} {...j} />)}
           </div>
         </Section>
 
         {/* Equipment + Notices */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <Section title="สถานะอุปกรณ์">
-            <div className="space-y-3">
-              {equips.map((e) => (
-                <EquipmentItem key={e.name} {...e} />
-              ))}
-            </div>
+            <div className="space-y-3">{equips.map((e) => <EquipmentItem key={e.name} {...e} />)}</div>
           </Section>
 
           <Section title="การแจ้งเตือน">
-            <div className="space-y-3">
-              {notices.map((n, i) => (
-                <NoticeItem key={i} {...n} />
-              ))}
-            </div>
+            <div className="space-y-3">{notices.map((n, i) => <NoticeItem key={i} {...n} />)}</div>
           </Section>
         </div>
       </main>
@@ -150,27 +128,19 @@ export default function ServerPage() {
   );
 }
 
-/* ============ components ============ */
-
+// ==== Components ====
 function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
   return <div className={`mt-6 rounded-xl border bg-white p-4 shadow-sm ${className}`}>{children}</div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <h2 className="font-semibold mb-4">{title}</h2>
-      {children}
-    </Card>
-  );
+  return <Card><h2 className="font-semibold mb-4">{title}</h2>{children}</Card>;
 }
 
 function StatCard({ label, value, icon, wrap, valueCls }: Stat) {
   return (
     <div className={`rounded-xl border p-4 shadow-sm flex items-center gap-3 ${wrap} border-current/20`}>
-      <div className="h-10 w-10 grid place-items-center rounded-lg bg-white/70">
-        {icon}
-      </div>
+      <div className="h-10 w-10 grid place-items-center rounded-lg bg-white/70">{icon}</div>
       <div className="min-w-0">
         <p className="text-xs opacity-80">{label}</p>
         <p className={`text-lg font-semibold truncate ${valueCls ?? ""}`}>{value}</p>
@@ -194,28 +164,19 @@ function JobItem(j: Job) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="font-semibold text-slate-900">{j.title}</h3>
-          <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-            <FiMapPin className="shrink-0" /> {j.location}
-          </p>
-          <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-            <FiClock className="shrink-0" /> {j.date}
-          </p>
-
+          <p className="text-sm text-slate-500 flex items-center gap-2 mt-1"><FiMapPin className="shrink-0"/> {j.location}</p>
+          <p className="text-sm text-slate-500 flex items-center gap-2 mt-1"><FiClock className="shrink-0"/> {j.date}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge tone={j.status === "กำลังดำเนินการ" ? "green" : "blue"}>{j.status}</Badge>
-            <button
+            <Link
+              to="/calendar"
               className={`px-3 py-1.5 rounded-md text-sm text-white ${
                 j.primary.intent === "green" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-sky-600 hover:bg-sky-700"
               }`}
-            >
-              {j.primary.text}
-            </button>
-            <button className="px-3 py-1.5 rounded-md text-sm bg-slate-200 text-slate-800 hover:bg-slate-300">
-              {j.secondary.text}
-            </button>
+            >{j.primary.text}</Link>
+            <Link to="/dashboard" className="px-3 py-1.5 rounded-md text-sm bg-slate-200 text-slate-800 hover:bg-slate-300">{j.secondary.text}</Link>
           </div>
         </div>
-
         <div className="text-right shrink-0">
           <div className="text-emerald-700 font-semibold">{j.price}</div>
           <div className="text-sm text-slate-500">{j.area}</div>
@@ -233,7 +194,7 @@ function EquipmentItem(e: Equip) {
         <p className="font-medium">{e.name}</p>
         <p className="text-sm text-slate-500">{e.desc}</p>
       </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${tone}`}>{e.status}</span>
+      <Link to="/plot" className={`px-3 py-1 rounded-full text-xs font-medium ${tone}`}>{e.status}</Link>
     </div>
   );
 }
@@ -245,9 +206,9 @@ function NoticeItem(n: Notice) {
     orange: "bg-orange-50 border-orange-100",
   };
   return (
-    <div className={`rounded-lg border p-3 ${tone[n.tone]}`}>
+    <Link to="/alert" className={`rounded-lg border p-3 block ${tone[n.tone]}`}>
       <p className="font-medium">{n.title}</p>
       <p className="text-sm text-slate-600">{n.desc}</p>
-    </div>
+    </Link>
   );
 }
