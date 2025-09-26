@@ -2,7 +2,7 @@ import { Thermometer, Droplet, CloudRain } from "lucide-react";
 
 export default function SensorPreview() {
   return (
-    <div className="grid md:grid-cols-2 gap-6 items-center rounded-2xl bg-white shadow p-6 md:p-8">
+    <div className="grid md:grid-cols-2 gap-6 items-center rounded-2xl bg-white shadow p-6 md:p-8 font-sans font-semibold">
       {/* ข้อมูลเซ็นเซอร์ฝั่งซ้าย */}
       <div className="space-y-4">
         <h2 className="flex items-center gap-2 text-green-800 font-semibold text-lg">

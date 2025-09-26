@@ -1,3 +1,4 @@
+// routes/fertilizer.js
 import express from "express";
 import db from "../db.js";
 import authenticate from "./authenticate.js";
@@ -8,16 +9,16 @@ const router = express.Router();
 router.post("/", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fertilizer_type, amount, date, note } = req.body;
+    const { fertilizer_type, amount, price, date, note } = req.body;
 
-    if (!fertilizer_type || !amount || !date) {
+    if (!fertilizer_type || !amount || price == null || !date) {
       return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
 
     await db.execute(
-      `INSERT INTO fertilizer_logs (user_id, fertilizer_type, amount, date, note)
-       VALUES (?, ?, ?, ?, ?)`,
-      [userId, fertilizer_type, amount, date, note || null]
+      `INSERT INTO fertilizer_logs (user_id, fertilizer_type, amount, price, date, note)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, fertilizer_type, amount, price, date, note || null]
     );
 
     res.json({ message: "บันทึกข้อมูลเรียบร้อย" });
@@ -32,7 +33,7 @@ router.get("/", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     const [rows] = await db.execute(
-      `SELECT id, fertilizer_type, amount, date, note, created_at
+      `SELECT id, fertilizer_type, amount, price, date, note, created_at
        FROM fertilizer_logs
        WHERE user_id = ?
        ORDER BY date DESC`,
@@ -51,17 +52,17 @@ router.put("/:id", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     const id = req.params.id;
-    const { fertilizer_type, amount, date, note } = req.body;
+    const { fertilizer_type, amount, price, date, note } = req.body;
 
-    if (!fertilizer_type || !amount || !date) {
+    if (!fertilizer_type || !amount || price == null || !date) {
       return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
 
     const [result] = await db.execute(
       `UPDATE fertilizer_logs
-       SET fertilizer_type = ?, amount = ?, date = ?, note = ?
+       SET fertilizer_type = ?, amount = ?, price = ?, date = ?, note = ?
        WHERE id = ? AND user_id = ?`,
-      [fertilizer_type, amount, date, note || null, id, userId]
+      [fertilizer_type, amount, price, date, note || null, id, userId]
     );
 
     if (result.affectedRows === 0) {

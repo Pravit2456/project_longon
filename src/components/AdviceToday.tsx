@@ -2,7 +2,7 @@ export default function AdviceToday() {
   return (
     <section >
       {/* ฝั่งข้อความ */}
-      <div className="flex-1 bg-[#e0f5e0] p-6 rounded-xl space-y-3">
+      <div className="flex-1 bg-[#e0f5e0] p-6 rounded-xl space-y-3 font-sans font-semibold">
         <h3 className="flex items-center gap-2 text-green-800 font-sans text-lg">
           <span className="text-yellow-500">💡</span> คำแนะนำการปลูกวันนี้
         </h3>

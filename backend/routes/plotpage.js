@@ -1,164 +1,128 @@
+// src/routes/plotpage.js
 import express from "express";
-import jwt from "jsonwebtoken";
-import { body, validationResult } from "express-validator";
+const router = express.Router();
 
-const plotsRouter = express.Router();
-
-let pool; // ตัวแปรเก็บ pool จากภายนอก
-
-export function setDBPool(dbPool) {
-  pool = dbPool;
+let db; // จะถูกเซ็ตจาก server.js
+export function setDBPool(pool) {
+  db = pool;
 }
 
-function authenticateToken(req, res, next) {
-  if (!req.cookies) {
-    console.error("No cookies found in request");
-    return res.status(401).json({ message: "Unauthorized - no cookies" });
-  }
-
-  const token = req.cookies.token;
-  console.log("Token from cookie:", token);
-
-  if (!token) {
-    console.error("No token cookie found");
-    return res.status(401).json({ message: "Unauthorized - no token" });
-  }
-
+// ====== POST /api/plots/add ======
+router.post("/add", async (req, res) => {
   try {
-    const user = jwt.verify(token, process.env.SECRET_KEY || "your-secret-key");
-    console.log("Decoded JWT payload:", user);
-    if (!user || !user.id) {
-      console.error("Invalid token payload:", user);
-      return res.status(403).json({ message: "Forbidden - invalid token payload" });
+    const {
+      user_id,
+      name,
+      location,
+      size,
+      moisture,
+      tree_health,
+      fertilizer,
+      status,
+      updated,
+      color,
+    } = req.body;
+
+    if (!user_id || !name) {
+      return res.status(400).json({ success: false, message: "ข้อมูล user_id หรือ name ไม่ครบ" });
     }
-    req.user = user;
-    next();
+
+    const validStatuses = ["ปกติ", "เฝ้าระวัง"];
+    const plotStatus = validStatuses.includes(status) ? status : null;
+    if (!plotStatus) {
+      return res.status(400).json({ success: false, message: `status ต้องเป็น 'ปกติ' หรือ 'เฝ้าระวัง', ได้ '${status}'` });
+    }
+
+    let updatedDate;
+    if (updated && !isNaN(Date.parse(updated))) {
+      updatedDate = updated.slice(0, 10);
+    } else if (!updated) {
+      updatedDate = new Date().toISOString().slice(0, 10);
+    } else {
+      return res.status(400).json({ success: false, message: `วันที่ updated ไม่ถูกต้อง: '${updated}'` });
+    }
+
+    const sizeNum = Number(size);
+    const moistureNum = Number(moisture);
+    const treeNum = Number(tree_health);
+    const fertilizerNum = Number(fertilizer);
+
+    if ([sizeNum, moistureNum, treeNum, fertilizerNum].some(isNaN)) {
+      return res.status(400).json({ success: false, message: "size, moisture, tree_health, fertilizer ต้องเป็นตัวเลข" });
+    }
+
+    const sql = `
+      INSERT INTO plots
+      (user_id, name, location, size, moisture, tree_health, fertilizer, status, updated, color)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      Number(user_id),
+      name,
+      location || "",
+      sizeNum,
+      moistureNum,
+      treeNum,
+      fertilizerNum,
+      plotStatus,
+      updatedDate,
+      color || (plotStatus === "ปกติ" ? "green" : "orange"),
+    ];
+
+    await db.execute(sql, values);
+    res.json({ success: true, message: "เพิ่มแปลงใหม่สำเร็จ!" });
   } catch (err) {
-    console.error("JWT verify error:", err);
-    return res.status(403).json({ message: "Forbidden - token verification failed" });
+    console.error("DB Error (POST /add):", err);
+    res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาดในการบันทึกลงฐานข้อมูล",
+      error: err.message,
+    });
   }
-}
+});
 
-// Middleware สำหรับ validate input POST และ PUT
-const validatePlot = [
-  body("name").trim().notEmpty().withMessage("ชื่อแปลงต้องไม่ว่าง"),
-  body("location").trim().notEmpty().withMessage("สถานที่ต้องไม่ว่าง"),
-  body("size").trim().notEmpty().withMessage("ขนาดต้องไม่ว่าง"),
-  body("moisture").trim().notEmpty().withMessage("ความชื้นต้องไม่ว่าง"),
-  body("treeHealth").trim().notEmpty().withMessage("สุขภาพต้นไม้ต้องไม่ว่าง"),
-  body("fertilizer").trim().notEmpty().withMessage("ปริมาณปุ๋ยต้องไม่ว่าง"),
-  body("status").isIn(["ปกติ", "เฝ้าระวัง"]).withMessage("สถานะต้องเป็น 'ปกติ' หรือ 'เฝ้าระวัง'"),
-  body("updated").trim().notEmpty().withMessage("วันที่อัปเดตต้องไม่ว่าง"),
-  body("color").isIn(["green", "orange"]).withMessage("สีต้องเป็น 'green' หรือ 'orange'"),
-];
-
-// Middleware ตรวจสอบผล validation
-function checkValidation(req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-}
-
-plotsRouter.use(authenticateToken);
-
-// GET แปลงของ user
-plotsRouter.get("/", async (req, res) => {
-  if (!pool) {
-    console.error("Database pool not initialized");
-    return res.status(500).json({ message: "DB not initialized" });
-  }
-
+// ====== GET /api/plots ======
+router.get("/", async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM plots WHERE user_id = ?", [req.user.id]);
+    const [rows] = await db.execute("SELECT * FROM plots ORDER BY id DESC");
     res.json(rows);
-  } catch (error) {
-    console.error("Error fetching plots:", error);
-    res.status(500).json({ message: "Error fetching plots", error: error.message });
+  } catch (err) {
+    console.error("DB Error (GET /):", err);
+    res.status(500).json({
+      success: false,
+      message: "โหลดข้อมูลไม่สำเร็จ",
+      error: err.message,
+    });
   }
 });
 
-// POST เพิ่มแปลงใหม่ พร้อม validate input
-plotsRouter.post("/", validatePlot, checkValidation, async (req, res) => {
-  if (!pool) {
-    console.error("Database pool not initialized");
-    return res.status(500).json({ message: "DB not initialized" });
-  }
-
-  const { name, location, size, moisture, treeHealth, fertilizer, status, updated, color } = req.body;
-
+// ====== DELETE /api/plots/:id ======
+// ====== DELETE /api/plots/:id ======
+router.delete("/:id", async (req, res) => {
   try {
-    await pool.query(
-      `INSERT INTO plots 
-      (user_id, name, location, size, moisture, tree_health, fertilizer, status, updated, color) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, name, location, size, moisture, treeHealth, fertilizer, status, updated, color]
-    );
-    res.status(201).json({ message: "Plot added" });
-  } catch (error) {
-    console.error("Error adding plot:", error);
-    res.status(500).json({ message: "Error adding plot", error: error.message });
-  }
-});
+    const { id } = req.params;
+    console.log("ลบแปลง id:", id);
 
-// PUT อัปเดตแปลง พร้อม validate input
-plotsRouter.put("/:id", validatePlot, checkValidation, async (req, res) => {
-  if (!pool) {
-    console.error("Database pool not initialized");
-    return res.status(500).json({ message: "DB not initialized" });
-  }
+    const [result] = await db.execute("DELETE FROM plots WHERE id = ?", [id]);
 
-  const plotId = req.params.id;
-  const { name, location, size, moisture, treeHealth, fertilizer, status, updated, color } = req.body;
-
-  try {
-    const [rows] = await pool.query("SELECT * FROM plots WHERE id = ? AND user_id = ?", [plotId, req.user.id]);
-    if (rows.length === 0) {
-      console.warn(`Plot not found: id=${plotId}, user_id=${req.user.id}`);
-      return res.status(404).json({ message: "Plot not found" });
-    }
-
-    await pool.query(
-      `UPDATE plots SET 
-      name=?, location=?, size=?, moisture=?, tree_health=?, fertilizer=?, status=?, updated=?, color=? 
-      WHERE id=?`,
-      [name, location, size, moisture, treeHealth, fertilizer, status, updated, color, plotId]
-    );
-    res.json({ message: "Plot updated" });
-  } catch (error) {
-    console.error("Error updating plot:", error);
-    res.status(500).json({ message: "Error updating plot", error: error.message });
-  }
-});
-
-// DELETE ลบแปลง
-plotsRouter.delete("/:id", async (req, res) => {
-  if (!pool) {
-    console.error("Database pool not initialized");
-    return res.status(500).json({ message: "DB not initialized" });
-  }
-
-  const plotId = req.params.id;
-
-  try {
-    const [rows] = await pool.query("SELECT * FROM plots WHERE id = ? AND user_id = ?", [plotId, req.user.id]);
-    if (rows.length === 0) {
-      console.warn(`Plot not found: id=${plotId}, user_id=${req.user.id}`);
-      return res.status(404).json({ message: "Plot not found" });
-    }
-
-    const [result] = await pool.query("DELETE FROM plots WHERE id = ?", [plotId]);
     if (result.affectedRows === 0) {
-      console.error("Delete operation did not affect any rows");
-      return res.status(500).json({ message: "Failed to delete plot" });
+      // ❌ เดิม return res.status(404)...
+      // ✅ แก้ให้ return success false แต่ไม่ส่ง error 404
+      return res.json({ success: false, message: "ไม่พบแปลงนี้", id });
     }
 
-    res.json({ message: "Plot deleted" });
-  } catch (error) {
-    console.error("Error deleting plot:", error);
-    res.status(500).json({ message: "Error deleting plot", error: error.message });
+    res.json({ success: true, message: "ลบแปลงสำเร็จ", id });
+  } catch (err) {
+    console.error("DB Error (DELETE /:id):", err);
+    res.status(500).json({
+      success: false,
+      message: "ไม่สามารถลบข้อมูลได้",
+      error: err.message,
+    });
   }
 });
 
-export default plotsRouter;
+
+
+export default router;

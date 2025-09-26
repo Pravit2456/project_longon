@@ -1,69 +1,114 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const response = await fetch("http://localhost:3000/api/users/register", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, role: "farmer" }) // ✅ เพิ่ม role
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password, role: "farmer" }),
       });
 
       if (response.ok) {
-        navigate('/login'); // ไปหน้า login ของเกษตรกร
+        navigate("/login");
       } else {
         const error = await response.json();
-        alert('เกิดข้อผิดพลาด: ' + error.message);
+        alert("เกิดข้อผิดพลาด: " + error.message);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์');
+      console.error("Error:", error);
+      alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleRegister} className="bg-white p-8 rounded shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center">สมัครสมาชิก (เกษตรกร)</h2>
-        <input
-          type="text"
-          placeholder="ชื่อผู้ใช้"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full px-4 py-2 mb-4 border rounded"
-          required
-        />
-        <input
-          type="email"
-          placeholder="อีเมล"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 mb-4 border rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="รหัสผ่าน"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 mb-4 border rounded"
-          required
-        />
-        <button type="submit" className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800">
-          สมัครสมาชิก
-        </button>
-        <p className="text-center text-sm mt-4">
-          มีบัญชีแล้ว? <span className="text-green-700 cursor-pointer" onClick={() => navigate('/login')}>เข้าสู่ระบบ</span>
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
+      style={{
+        backgroundImage: "url('/images/bglongan.png')", // ✅ พื้นหลังรูปสวนลำไย
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-green-900/30"></div>
+
+      {/* Card */}
+      <div className="relative z-10 bg-white shadow-xl rounded-xl w-full max-w-md p-8 border border-green-200">
+        <h1 className="text-3xl font-bold text-green-800 mb-6 text-center">
+          🌱 สมัครสมาชิก (เกษตรกร)
+        </h1>
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้</label>
+            <input
+              type="text"
+              placeholder="ชื่อของคุณ"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg bg-white
+                         placeholder-gray-400 text-gray-900
+                         focus:ring-2 focus:ring-green-600 focus:border-green-400
+                         focus:outline-none shadow-sm transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">อีเมล</label>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg bg-white
+                         placeholder-gray-400 text-gray-900
+                         focus:ring-2 focus:ring-green-600 focus:border-green-400
+                         focus:outline-none shadow-sm transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg bg-white
+                         placeholder-gray-400 text-gray-900
+                         focus:ring-2 focus:ring-green-600 focus:border-green-400
+                         focus:outline-none shadow-sm transition"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-600 transition transform hover:scale-[1.02] shadow-md"
+          >
+            สมัครสมาชิก
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-700">
+          มีบัญชีอยู่แล้ว?{" "}
+          <button
+            onClick={() => navigate("/login")}
+            className="text-green-700 font-semibold hover:underline"
+          >
+            เข้าสู่ระบบ
+          </button>
         </p>
-      </form>
+      </div>
     </div>
   );
 }

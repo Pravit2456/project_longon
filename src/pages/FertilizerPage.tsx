@@ -1,253 +1,197 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-interface FertilizerRecord {
+// type สำหรับประวัติการใส่ปุ๋ย
+interface FertilizerHistory {
   id: number;
   fertilizer_type: string;
   amount: number;
+  price: number;
   date: string;
-  note?: string;
+  note: string;
   created_at: string;
 }
 
 export default function FertilizerPage() {
   const [form, setForm] = useState({
-    type: "สูตร 15-15-15",
-    amount: "30",
+    fertilizer_type: "สูตร 15-15-15",
+    amount: 30,
+    price: 20,
     date: "",
-    note: ""
+    note: "",
   });
 
-  const [history, setHistory] = useState<FertilizerRecord[]>([]);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [history, setHistory] = useState<FertilizerHistory[]>([]);
+  const navigate = useNavigate();
 
+  // ✅ โหลดจาก localStorage ครั้งแรก
   useEffect(() => {
-    fetchHistory();
+    const saved = localStorage.getItem("fertilizerHistory");
+    if (saved) {
+      setHistory(JSON.parse(saved));
+    }
   }, []);
 
-  async function fetchHistory() {
-    try {
-      const res = await axios.get<FertilizerRecord[]>(
-        "http://localhost:3000/api/fertilizer",
-        { withCredentials: true }
-      );
-      setHistory(res.data);
-    } catch (error) {
-      console.error("Failed to fetch fertilizer history", error);
-    }
-  }
+  // ✅ ฟังก์ชันบันทึก
+  const handleSave = () => {
+    if (!form.date) return alert("กรุณาเลือกวันที่");
 
-  async function handleSave() {
-    if (!form.type || !form.amount || !form.date) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-      return;
-    }
-    try {
-      await axios.post(
-        "http://localhost:3000/api/fertilizer",
-        {
-          fertilizer_type: form.type,
-          amount: Number(form.amount),
-          date: form.date,
-          note: form.note,
-        },
-        { withCredentials: true }
-      );
-      alert("บันทึกข้อมูลเรียบร้อย");
-      setForm({ type: "สูตร 15-15-15", amount: "30", date: "", note: "" });
-      fetchHistory();
-    } catch (error) {
-      console.error("Failed to save fertilizer record", error);
-      alert("บันทึกข้อมูลไม่สำเร็จ");
-    }
-  }
+    const newEntry: FertilizerHistory = {
+      id: Date.now(),
+      fertilizer_type: form.fertilizer_type,
+      amount: form.amount,
+      price: form.price,
+      date: form.date,
+      note: form.note,
+      created_at: new Date().toLocaleString("th-TH"),
+    };
 
-  function handleEdit(item: FertilizerRecord) {
-    setForm({
-      type: item.fertilizer_type,
-      amount: item.amount.toString(),
-      date: item.date,
-      note: item.note || ""
-    });
-    setEditId(item.id);
-  }
+    // อัปเดต state
+    const updated = [newEntry, ...history];
+    setHistory(updated);
 
-  async function handleDelete(id: number) {
-    if (!confirm("ต้องการลบข้อมูลนี้จริงหรือไม่?")) return;
-    try {
-      await axios.delete(`http://localhost:3000/api/fertilizer/${id}`, {
-        withCredentials: true,
-      });
-      alert("ลบข้อมูลเรียบร้อย");
-      if (editId === id) {
-        setEditId(null);
-        setForm({ type: "สูตร 15-15-15", amount: "30", date: "", note: "" });
-      }
-      fetchHistory();
-    } catch (error) {
-      console.error("Failed to delete fertilizer record", error);
-      alert("ลบข้อมูลไม่สำเร็จ");
-    }
-  }
+    // อัปเดต localStorage ทันที
+    localStorage.setItem("fertilizerHistory", JSON.stringify(updated));
 
-  async function handleUpdate() {
-    if (!form.type || !form.amount || !form.date || editId === null) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
-      return;
-    }
-    try {
-      await axios.put(
-        `http://localhost:3000/api/fertilizer/${editId}`,
-        {
-          fertilizer_type: form.type,
-          amount: Number(form.amount),
-          date: form.date,
-          note: form.note,
-        },
-        { withCredentials: true }
-      );
-      alert("แก้ไขข้อมูลเรียบร้อย");
-      setEditId(null);
-      setForm({ type: "สูตร 15-15-15", amount: "30", date: "", note: "" });
-      fetchHistory();
-    } catch (error) {
-      console.error("Failed to update fertilizer record", error);
-      alert("แก้ไขข้อมูลไม่สำเร็จ");
-    }
-  }
+    alert(
+      `✅ บันทึกสำเร็จ (ค่าใช้จ่ายรวม ${(form.amount * form.price).toLocaleString()} บาท)`
+    );
+  };
 
-  const isEditing = editId !== null;
+  // ✅ ฟังก์ชันลบ
+  const handleDelete = (id: number) => {
+    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?")) return;
+    const updated = history.filter((item) => item.id !== id);
+    setHistory(updated);
+    localStorage.setItem("fertilizerHistory", JSON.stringify(updated));
+  };
 
   return (
-    <div className="min-h-screen bg-[#F3F6EF] text-gray-800 p-6">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-[#3A6E3A]">DSS ลำไย</h1>
-        <div className="text-sm">คำแนะนำปุ๋ย</div>
-      </header>
-
-      <div className="mb-4">
-        <select className="border px-4 py-2 rounded shadow text-sm">
+    <div className="min-h-screen bg-[#F4F6EF] text-gray-800 p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <select className="border border-gray-300 px-4 py-2 rounded-lg shadow text-sm">
           <option>แปลง 1 - โซนเหนือ</option>
-          <option>แปลง 2 - โซนใต้</option>
-          <option>แปลง 3 - โซนอีสาน</option>
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded shadow p-4">
-          <h2 className="font-semibold mb-2">สภาพดินปัจจุบัน</h2>
-          <ul className="text-sm space-y-1">
-            <li>ความชื้น: <strong>38%</strong></li>
-            <li>pH: <strong>5.8</strong></li>
-            <li>ธาตุอาหาร: <strong>N ต่ำ, P ต่ำ, K สูง</strong></li>
-          </ul>
-        </div>
-
-        <div className="bg-[#E8F6F0] rounded shadow p-4">
-          <h2 className="font-semibold mb-2">คำแนะนำปุ๋ยโดย AI</h2>
-          <ul className="text-sm space-y-1">
-            <li>ชนิดปุ๋ย: <strong>สูตร 15-15-15</strong></li>
-            <li>ปริมาณ: <strong>30 กก./ไร่</strong></li>
-            <li>รอบเวลา: ทุก 30 วัน (ครั้งล่าสุดคือ 25 เม.ย. 2568)</li>
-          </ul>
-          <button className="mt-2 text-xs underline text-green-700">
-            ตรวจสอบแผนการให้ปุ๋ยฤดูถัดไปเพื่อผลผลิตที่ดีขึ้น
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-[#FBF8F4] border rounded shadow p-6 mb-6">
-        <h2 className="font-semibold mb-4">
-          {isEditing ? "แก้ไขข้อมูลการให้ปุ๋ย" : "บันทึกการให้ปุ๋ย"}
-        </h2>
+      {/* ฟอร์มปุ๋ย */}
+      <div className="bg-[#FBF8F4] border border-[#E3D9CA] rounded-2xl shadow p-6">
+        <h2 className="font-semibold mb-4">คำนวณปริมาณและบันทึกการใส่ปุ๋ย</h2>
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm mb-1">ชนิดปุ๋ย</label>
             <select
-              className="w-full border px-3 py-2 rounded text-sm"
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm"
+              value={form.fertilizer_type}
+              onChange={(e) =>
+                setForm({ ...form, fertilizer_type: e.target.value })
+              }
             >
               <option>สูตร 15-15-15</option>
               <option>สูตร 16-20-0</option>
+              <option>ยูเรีย</option>
             </select>
           </div>
+
           <div>
             <label className="block text-sm mb-1">ปริมาณ (กก.)</label>
             <input
               type="number"
-              className="w-full border px-3 py-2 rounded text-sm"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm"
               value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, amount: Number(e.target.value) })
+              }
             />
           </div>
+
+          <div>
+            <label className="block text-sm mb-1">ราคาปุ๋ย (บาท/กก.)</label>
+            <input
+              type="number"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm"
+              value={form.price}
+              onChange={(e) =>
+                setForm({ ...form, price: Number(e.target.value) })
+              }
+            />
+          </div>
+
           <div>
             <label className="block text-sm mb-1">วันที่ให้ปุ๋ย</label>
             <input
               type="date"
-              className="w-full border px-3 py-2 rounded text-sm"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm"
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
           </div>
-          <div>
+
+          <div className="md:col-span-2">
             <label className="block text-sm mb-1">หมายเหตุ</label>
             <input
               type="text"
-              className="w-full border px-3 py-2 rounded text-sm"
+              className="w-full border border-gray-300 px-3 py-2 rounded-lg text-sm"
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
             />
           </div>
         </div>
+
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm mb-4">
+          💰 ค่าใช้จ่ายรวม:{" "}
+          <strong className="text-green-700">
+            {(form.amount * form.price).toLocaleString()} บาท
+          </strong>
+        </div>
+
         <button
-          className="bg-[#8D7B57] text-white px-4 py-2 rounded text-sm mt-2"
-          onClick={isEditing ? handleUpdate : handleSave}
+          onClick={handleSave}
+          className="w-full py-2 rounded-xl text-white font-medium flex items-center justify-center shadow-md"
+          style={{
+            background: "linear-gradient(90deg, #5E7E3E 0%, #B5925A 100%)",
+            boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
+          }}
         >
-          {isEditing ? "อัปเดตข้อมูล" : "บันทึกข้อมูล"}
+          <span className="mr-2 text-lg">🧮</span> บันทึกข้อมูล
         </button>
-        {isEditing && (
-          <button
-            className="ml-2 px-4 py-2 rounded border text-sm"
-            onClick={() => {
-              setEditId(null);
-              setForm({ type: "สูตร 15-15-15", amount: "30", date: "", note: "" });
-            }}
-          >
-            ยกเลิก
-          </button>
-        )}
       </div>
 
-      <div className="bg-[#E9F1E7] rounded shadow p-4">
-        <h2 className="font-semibold mb-4">ประวัติการให้ปุ๋ย</h2>
+      {/* ประวัติ */}
+      <div className="bg-[#E6F1E7] rounded-2xl shadow p-4 border border-[#C5D8C5]">
+        <h2 className="font-semibold mb-4">ประวัติการใส่ปุ๋ย</h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-600 border-b">
+            <tr className="text-left text-gray-600 border-b border-gray-300">
               <th className="py-2">วันที่</th>
               <th>ชนิดปุ๋ย</th>
               <th>ปริมาณ (กก.)</th>
+              <th>ราคา/กก.</th>
+              <th>ค่าใช้จ่ายรวม</th>
               <th>หมายเหตุ</th>
-              <th className="text-center">จัดการ</th>
+              <th>บันทึกเมื่อ</th>
+              <th>การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {history.map((item) => (
-              <tr key={item.id} className="border-b text-gray-700">
-                <td className="py-2">{new Date(item.date).toLocaleDateString("th-TH")}</td>
+              <tr
+                key={item.id}
+                className="border-b border-gray-300 text-gray-700"
+              >
+                <td className="py-2">{item.date}</td>
                 <td>{item.fertilizer_type}</td>
                 <td>{item.amount}</td>
+                <td>{item.price}</td>
+                <td className="text-green-700 font-semibold">
+                  {(item.amount * item.price).toLocaleString()}
+                </td>
                 <td>{item.note}</td>
-                <td className="text-center space-x-2">
+                <td>{item.created_at}</td>
+                <td>
                   <button
-                    className="text-blue-600 underline text-xs"
-                    onClick={() => handleEdit(item)}
-                  >
-                    แก้ไข
-                  </button>
-                  <button
-                    className="text-red-600 underline text-xs"
                     onClick={() => handleDelete(item.id)}
+                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
                   >
                     ลบ
                   </button>
@@ -258,9 +202,15 @@ export default function FertilizerPage() {
         </table>
       </div>
 
-      <footer className="text-center text-xs text-gray-400 mt-6">
-        © 2025 DSS ลำไย Smart Farming
-      </footer>
+      {/* ปุ่มย้อนกลับ */}
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-gray-700 shadow"
+        >
+          ⬅ ย้อนกลับ
+        </button>
+      </div>
     </div>
   );
 }

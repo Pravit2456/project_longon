@@ -1,6 +1,6 @@
 export default function DroneForm() {
   return (
-    <div className="min-h-screen bg-[#f1eae1] flex items-center justify-center font-sans">
+    <div className="min-h-screen bg-[#f1eae1] flex items-center justify-center font-sans font-semibold">
     <div className="max-w-4xl w-full bg-[#a5afab] rounded-2xl p-8 shadow-md">
     <h1 className="text-2xl text-center font-semibold bg-[#e7e1d9] text-black rounded-full py-2 w-fit px-6 mx-auto mb-8">
           ป้อนข้อมูลอุปกรณ์

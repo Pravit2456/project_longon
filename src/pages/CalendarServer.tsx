@@ -1,22 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FiBell, FiHome, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { FaLeaf } from "react-icons/fa";
 import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  addDays,
-  addMonths,
-  subMonths,
-  isSameMonth,
-  isToday,
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  addDays, addMonths, subMonths, isSameMonth, isToday,
 } from "date-fns";
 import { th } from "date-fns/locale/th";
 
-/* ===== Types ===== */
 type Event = {
   id: number;
   title: string;
@@ -28,13 +18,22 @@ type Event = {
 const CalendarServer: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
-  const [events, setEvents] = useState<Event[]>([
-    { id: 1, title: "ตรวจสอบแผน A", date: "2024-01-02", time: "09:00", status: "กำลังดำเนินการ" },
-    { id: 2, title: "วางแผนป้องกัน", date: "2024-01-04", time: "14:00", status: "กำลังดำเนินการ" },
-    { id: 3, title: "เก็บเกี่ยวแปลง B", date: "2024-01-05", time: "08:00", status: "เสร็จสิ้น" },
-  ]);
 
-  // modal state
+  const [events, setEvents] = useState<Event[]>(() => {
+    const saved = localStorage.getItem("calendarEvents");
+    return saved
+      ? JSON.parse(saved)
+      : [
+          { id: 1, title: "ตรวจสอบแผน A", date: "2024-01-02", time: "09:00", status: "กำลังดำเนินการ" },
+          { id: 2, title: "วางแผนป้องกัน", date: "2024-01-04", time: "14:00", status: "กำลังดำเนินการ" },
+          { id: 3, title: "เก็บเกี่ยวแปลง B", date: "2024-01-05", time: "08:00", status: "เสร็จสิ้น" },
+        ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("calendarEvents", JSON.stringify(events));
+  }, [events]);
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [newEvent, setNewEvent] = useState<Event>({
@@ -45,7 +44,6 @@ const CalendarServer: React.FC = () => {
     status: "กำลังดำเนินการ",
   });
 
-  /* สีของ event */
   const statusColors: Record<Event["status"], string> = {
     "กำลังดำเนินการ": "bg-orange-50 text-orange-600 border-orange-200",
     "เสร็จสิ้น": "bg-green-50 text-green-600 border-green-200",
@@ -80,11 +78,7 @@ const CalendarServer: React.FC = () => {
             isSameMonth(day, monthStart) ? "bg-white hover:bg-gray-50" : "bg-gray-50 text-gray-400"
           }`}
         >
-          <span
-            className={`font-semibold text-sm ${
-              isToday(day) ? "text-emerald-600" : "text-gray-700"
-            }`}
-          >
+          <span className={`font-semibold text-sm ${isToday(day) ? "text-emerald-600" : "text-gray-700"}`}>
             {format(day, "d")}
           </span>
           <div className="space-y-1 mt-1">
@@ -115,7 +109,6 @@ const CalendarServer: React.FC = () => {
     days = [];
   }
 
-  /* Save / Delete Event */
   const handleSaveEvent = () => {
     if (editingEvent) {
       setEvents(events.map((e) => (e.id === editingEvent.id ? newEvent : e)));
@@ -140,22 +133,16 @@ const CalendarServer: React.FC = () => {
       <header className="sticky top-0 z-30 bg-white border-b">
         <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 font-sans">
-            <div className="h-8 w-8 rounded-md bg-emerald-600 grid place-items-center text-white">
-              <FaLeaf />
-            </div>
-            <span>Smart Sensor longan</span>
+            <img src="/images/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+            <span>longan Smart Sensor </span>
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600">
-            <Link to="/severpage" className="hover:text-slate-900">
+            <Link to="/serverpage" className="hover:text-slate-900">
               <FiHome /> แดชบอร์ด
             </Link>
             <button className="text-emerald-600 font-semibold">ปฏิทินงาน</button>
-            <a className="hover:text-slate-900" href="#">อุปกรณ์</a>
-            <a className="hover:text-slate-900" href="#">ราคา</a>
-            <Link to="/profileview" className="hover:text-slate-900">
-              โปรไฟล์
-            </Link>
+            <Link to="/profileview" className="hover:text-slate-900">โปรไฟล์</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -184,22 +171,16 @@ const CalendarServer: React.FC = () => {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentMonth(new Date())} className="text-emerald-600 text-sm font-medium">
-                วันนี้
-              </button>
+              <button onClick={() => setCurrentMonth(new Date())} className="text-emerald-600 text-sm font-medium">วันนี้</button>
               <button
                 onClick={() => setView("month")}
-                className={`flex items-center gap-1 px-3 py-1 border rounded-md text-sm ${
-                  view === "month" ? "bg-blue-500 text-white" : "hover:bg-blue-50 hover:text-blue-600"
-                }`}
+                className={`flex items-center gap-1 px-3 py-1 border rounded-md text-sm ${view === "month" ? "bg-blue-500 text-white" : "hover:bg-blue-50 hover:text-blue-600"}`}
               >
                 📅 เดือน
               </button>
               <button
                 onClick={() => setView("week")}
-                className={`flex items-center gap-1 px-3 py-1 border rounded-md text-sm ${
-                  view === "week" ? "bg-blue-500 text-white" : "hover:bg-blue-50 hover:text-blue-600"
-                }`}
+                className={`flex items-center gap-1 px-3 py-1 border rounded-md text-sm ${view === "week" ? "bg-blue-500 text-white" : "hover:bg-blue-50 hover:text-blue-600"}`}
               >
                 📆 สัปดาห์
               </button>
@@ -239,21 +220,20 @@ const CalendarServer: React.FC = () => {
             <p className="text-sm text-gray-500">คลิกวันที่เพื่อเพิ่ม หรือคลิกกิจกรรมเพื่อแก้ไข/ลบ</p>
           </div>
 
-          <div className="border border-gray-200 rounded-md p-3 bg-white shadow-sm">
-            <h3 className="font-semibold mb-2">สถิติรายเดือน</h3>
-            <div className="text-gray-400 text-sm">[กราฟหรือข้อมูลสถิติ]</div>
-          </div>
-
+          {/* ลิงก์ไป “ลงคิวว่างผู้ให้บริการ” (nested path) */}
           <div className="border border-gray-200 rounded-md p-3 bg-white shadow-sm space-y-2">
             <h3 className="font-semibold mb-2">การดำเนินการด่วน</h3>
-            <button className="w-full bg-blue-500 text-white py-1.5 rounded-md">🔔 ตั้งเตือน</button>
-            <button className="w-full bg-green-500 text-white py-1.5 rounded-md">📤 ส่งออกรายงาน</button>
-            <button className="w-full bg-orange-500 text-white py-1.5 rounded-md">📂 จัดเก็บข้อมูล</button>
+            <Link
+              to="/provider-slot"  // ✅ เปลี่ยน path
+              className="block w-full text-center bg-purple-600 text-white py-1.5 rounded-md hover:bg-purple-700 transition"
+            >
+              ➕ ลงคิวว่างผู้ให้บริการ
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Event Modal */}
       {selectedDate && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
@@ -297,14 +277,10 @@ const CalendarServer: React.FC = () => {
 
             <div className="flex justify-between items-center mt-4">
               {editingEvent && (
-                <button onClick={handleDeleteEvent} className="px-4 py-2 bg-red-500 text-white rounded-md">
-                  ลบกิจกรรม
-                </button>
+                <button onClick={handleDeleteEvent} className="px-4 py-2 bg-red-500 text-white rounded-md">ลบกิจกรรม</button>
               )}
               <div className="flex gap-2 ml-auto">
-                <button onClick={() => { setSelectedDate(null); setEditingEvent(null); }} className="px-4 py-2 border rounded-md">
-                  ยกเลิก
-                </button>
+                <button onClick={() => { setSelectedDate(null); setEditingEvent(null); }} className="px-4 py-2 border rounded-md">ยกเลิก</button>
                 <button onClick={handleSaveEvent} className="px-4 py-2 bg-emerald-600 text-white rounded-md">
                   {editingEvent ? "บันทึกการแก้ไข" : "บันทึก"}
                 </button>

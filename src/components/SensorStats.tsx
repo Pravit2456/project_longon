@@ -2,14 +2,13 @@ import {
   Sun,
   CloudRain,
   Cloud,
-  CloudSnow
 } from "lucide-react"; 
 
 const sensorData = [
   { icon: <Sun className="text-yellow-500 w-8 h-8" />, value: "32°C", label: "อุณหภูมิ" },
   { icon: <CloudRain className="text-blue-500 w-8 h-8" />, value: "78%", label: "ความชื้น" },
   { icon: <Cloud className="text-gray-400 w-8 h-8" />, value: "2 µm", label: "ฝุ่น" },
-  { icon: <CloudSnow className="text-green-500 w-8 h-8" />, value: "1.2 mm", label: "ปริมาณฝน" }
+  
 ];
 
 export default function SensorStats() {

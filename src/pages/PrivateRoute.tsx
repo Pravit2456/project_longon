@@ -1,19 +1,11 @@
-import { Navigate } from "react-router-dom";
-import { useUser } from "./UserContext";
+// src/pages/PrivateRoute.tsx
+import type { ReactNode } from "react"; // ✅ ใช้ import type
 
-export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { userId, loading } = useUser();
+interface Props {
+  children: ReactNode;
+}
 
-  if (loading) {
-    // รอโหลดสถานะ userId ก่อน
-    return <div>กำลังโหลด...</div>;
-  }
-
-  if (!userId) {
-    // ถ้ายังไม่ล็อกอินให้ไปหน้า login
-    return <Navigate to="/login" replace />;
-  }
-
-  // ล็อกอินแล้ว แสดง children ได้เลย
+export default function PrivateRoute({ children }: Props) {
+  // ชั่วคราว: ไม่ตรวจสอบ login
   return <>{children}</>;
 }

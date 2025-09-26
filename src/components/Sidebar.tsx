@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Globe2, Leaf, Calendar, Bell, Settings } from 'lucide-react';
+import { Globe2, Leaf, Calendar, Bell, Settings, FolderHeart } from 'lucide-react';
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -11,9 +11,9 @@ export default function Sidebar() {
     { path: '/dashboard', label: 'แดชบอร์ด', icon: <Globe2 size={18} /> },
     { path: '/plot', label: 'แปลงของฉัน', icon: <Leaf size={18} /> },
     { path: '/calendar', label: 'ปฏิทินกิจกรรม', icon: <Calendar size={18} /> },
-    { path: '/fertilizer', label: 'คำณวนปุ๋ย', icon: <Bell size={18} /> },
+    { path: '/findproviders', label: 'จองคิวบริการ', icon: <FolderHeart size={18} /> },
     { path: '/alert', label: 'แจ้งเตือน', icon: <Bell size={18} /> },
-    { path: '/setting', label: 'ตั้งค่า', icon: <Settings size={18} /> },
+    { path: '/ProfileEdit', label: 'ตั้งค่า', icon: <Settings size={18} /> },
   ];
 
   return (
@@ -29,7 +29,7 @@ export default function Sidebar() {
              onClick={() => navigate('Homepage')}>
           <img
             src="images/logo.png"
-            alt="DSS ลำไย"
+            alt="Smart Sensor longan"
             className="h-10 w-10 object-cover rounded-full"
           />
           <span className="text-xl font-sans">Smartsensor longan</span>

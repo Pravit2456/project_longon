@@ -5,7 +5,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="bg-gradient-to-r from-green-800 to-green-400 p-4 rounded-b-xl shadow">
+    <header className="bg-gradient-to-r from-green-800 to-green-400 p-4 rounded-b-xl  shadow font-sans font-semibold">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* โลโก้ + ชื่อ */}
         <div className="flex items-center gap-2">
@@ -21,7 +21,7 @@ export default function Header() {
 
         {/* ปุ่ม */}
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-full shadow px-4 py-2 transition"
         >
           <Leaf className="w-4 h-4" />

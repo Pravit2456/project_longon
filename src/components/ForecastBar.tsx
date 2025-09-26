@@ -17,7 +17,7 @@ const forecastMonths = [
 ];
 
 export default function ForecastBar() {
-  const scrollRef = useRef<HTMLDivElement>(null); // ✅ แก้ตรงนี้
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -30,7 +30,7 @@ export default function ForecastBar() {
 
 
   return (
-    <section className="px-4 py-3">
+    <section className="px-4 py-3 font-sans font-semibold">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2">
           <Calendar className="w-5 h-5" /> พยากรณ์ฤดูปลูก (ก.ย. – ก.พ.)

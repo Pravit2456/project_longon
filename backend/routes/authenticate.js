@@ -1,23 +1,22 @@
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
-// ควรเก็บ SECRET_KEY ใน .env แล้วโหลดผ่าน process.env
-const SECRET_KEY = "your-secret-key";
+dotenv.config();
+
+const SECRET_KEY = process.env.JWT_SECRET || "default-secret-key";
+
+function getToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) return authHeader.split(" ")[1];
+  if (req.cookies?.token) return req.cookies.token;
+  return null;
+}
 
 export default function authenticate(req, res, next) {
-  let token;
-
-  // เช็ค Authorization header แบบ Bearer token
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
-  }
-
-  // ถ้าไม่มี token จาก header ให้เช็ค cookie token
-  if (!token && req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-
-  console.log("Token in authenticate middleware:", token); // เพิ่ม log เพื่อตรวจสอบ
+  const token = getToken(req);
+  console.log("Cookies:", req.cookies);
+  console.log("Authorization header:", req.headers.authorization);
+  console.log("Token in authenticate middleware:", token);
 
   if (!token) {
     return res.status(401).json({ error: "Missing token" });
@@ -25,10 +24,15 @@ export default function authenticate(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
-    req.user = decoded; // ใส่ข้อมูล user ใน req เพื่อใช้ต่อ
+    req.user = decoded;
     next();
   } catch (err) {
     console.error("JWT verification failed:", err);
-    return res.status(403).json({ error: "Invalid or expired token" });
+
+    if (err.name === "TokenExpiredError") {
+      return res.status(403).json({ error: "Token expired" });
+    }
+
+    return res.status(403).json({ error: "Invalid token" });
   }
 }
