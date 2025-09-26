@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -132,6 +132,16 @@ export default function Calendartwo() {
   const [harvestKg, setHarvestKg] = useState<number | "">("");
   const [note, setNote] = useState("");
 
+  // ✨ Modal แก้ไขกิจกรรม
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<EType>("fertilize");
+  const [editTitle, setEditTitle] = useState("");
+  const [editFert, setEditFert] = useState<number | "">("");
+  const [editHarv, setEditHarv] = useState<number | "">("");
+  const [editNote, setEditNote] = useState("");
+  const [editDate, setEditDate] = useState<string>(""); // YYYY-MM-DD
+
   const navigate = useNavigate();
   const intervalRef = useRef<number | null>(null);
 
@@ -178,28 +188,9 @@ export default function Calendartwo() {
       return d.getFullYear() === year && d.getMonth() === m;
     });
 
-  const sumFertilizerKg = useMemo(
-    () => events.reduce((acc, e) => {
-      const d = new Date(e.start as string);
-      if (d.getFullYear() !== year) return acc;
-      return acc + (e.extendedProps?.fertilizerKg || 0);
-    }, 0),
-    [events, year]
-  );
-
-  const sumHarvestKg = useMemo(
-    () => events.reduce((acc, e) => {
-      const d = new Date(e.start as string);
-      if (d.getFullYear() !== year) return acc;
-      return acc + (e.extendedProps?.harvestKg || 0);
-    }, 0),
-    [events, year]
-  );
-
-
   const unreadCount = notis.filter(n => !n.read).length;
 
-  /* ---------- Calendar handlers (persist ทันที) ---------- */
+  /* ---------- Calendar handlers ---------- */
   const handleDateClick = (info: any) => {
     setNewEventRange({ start: info.dateStr });
     setModalOpen(true);
@@ -238,50 +229,71 @@ export default function Calendartwo() {
     setModalOpen(false);
   };
 
-  const handleDeleteEvent = (id: string) => {
-    setEvents(prev => prev.filter(e => e.id !== id));
+  /* ---------- เปิดป๊อปอัพแก้ไขเมื่อคลิกรายการ “กิจกรรมเดือนนี้” ในการ์ดเล็ก ---------- */
+  const openEditModal = (evt: FarmEvent) => {
+    setEditId(String(evt.id));
+    const t = evt.extendedProps?.etype ?? "fertilize";
+    setEditType(t);
+    setEditTitle((evt.title || "").toString().replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u, ""));
+    setEditFert(evt.extendedProps?.fertilizerKg ?? "");
+    setEditHarv(evt.extendedProps?.harvestKg ?? "");
+    setEditNote(evt.extendedProps?.note ?? "");
+    setEditDate(ymd(evt.start as string));
+    setEditOpen(true);
   };
 
-  /* ---------- Recommendations ---------- */
-  const recommendationsForMonth = (m: number) => {
-    const list = monthEvents(m);
-    const hasFert = list.some(e => e.extendedProps?.etype === "fertilize");
-    const hasPrune = list.some(e => e.extendedProps?.etype === "prune");
-    const hasWater = list.some(e => e.extendedProps?.etype === "water");
-    const recs: string[] = [];
+  const saveEdit = () => {
+    if (!editId) return;
+    const fertNum = editType === "fertilize" ? Number(editFert || 0) : undefined;
+    const harvNum = editType === "harvest" ? Number(editHarv || 0) : undefined;
 
-    if (!hasPrune && (m === 1 || m === 2)) {
-      recs.push("ยังไม่มีกิจกรรมตัดแต่งกิ่งช่วงปลายฤดูหนาว แนะนำวางแผนตัดแต่งเพื่อกระตุ้นตาดอก");
-    }
-    if (!hasFert) {
-      recs.push("เดือนนี้ยังไม่มีการใส่ปุ๋ย แนะนำตรวจสภาพต้น/ดิน และคำนวณปริมาณปุ๋ยที่เหมาะสม");
-    }
-    if (!hasWater && (m >= 2 && m <= 5)) {
-      recs.push("เข้าหน้าร้อน ควรรดน้ำสม่ำเสมอเพื่อลดความเครียดของต้นลำไย");
-    }
-    if (list.some(e => e.extendedProps?.etype === "harvest")) {
-      recs.push("มีการเก็บเกี่ยวแล้ว แนะนำบันทึกผลผลิตและวิเคราะห์ต้นทุนรอบที่ผ่านมา");
-    }
-    if (recs.length === 0) recs.push("ไม่มีคำแนะนำเฉพาะ แผนงานเดือนนี้ดูครบถ้วนแล้ว ✅");
-    return recs;
+    setEvents(prev =>
+      prev.map(e => {
+        if (String(e.id) !== editId) return e;
+        const updated: FarmEvent = {
+          ...e,
+          start: editDate,
+          title: buildTitle(editType, editTitle, fertNum, harvNum),
+          extendedProps: {
+            ...(e.extendedProps || {}),
+            etype: editType,
+            fertilizerKg: fertNum,
+            harvestKg: harvNum,
+            note: editNote || undefined,
+          },
+        };
+        return updated;
+      })
+    );
+    setEditOpen(false);
   };
 
-  /* ---------- Render month (เพิ่มบล็อกคำแนะนำย่อ) ---------- */
+  /* ---------- แสดงอีเวนต์ใต้วันที่ ---------- */
+  const renderEvent = (arg: any) => (
+    <div
+      className="text-[10px] md:text-xs px-1 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 overflow-hidden text-ellipsis whitespace-nowrap"
+      title={arg.event.title}
+    >
+      {arg.event.title}
+    </div>
+  );
+
+  /* ---------- Render month (การ์ดเล็ก) ---------- */
   const renderMonth = (month: number) => {
     const startDate = new Date(year, month, 1);
     const mEvents = monthEvents(month).sort((a, b) =>
       new Date(a.start as string).getTime() - new Date(b.start as string).getTime()
     );
 
-    // คำแนะนำแบบย่อ (โชว์ 1–2 บรรทัด)
     const recs = recommendationsForMonth(month);
     const recPreview = recs.slice(0, 2);
 
     return (
       <div
         key={month}
-        className="bg-white shadow rounded-lg p-2 hover:shadow-md transition flex flex-col"
+        className="bg-white shadow rounded-lg p-2 hover:shadow-md hover:bg-gray-50 transition cursor-pointer flex flex-col"
         onClick={() => setSelectedMonth(month)}
+        title="เปิดดูเดือนนี้"
       >
         {/* กิจกรรมเดือนนี้ */}
         {mEvents.length > 0 && (
@@ -289,19 +301,18 @@ export default function Calendartwo() {
             <p className="font-semibold text-red-600 mb-1">📌 กิจกรรมเดือนนี้</p>
             <ul className="list-disc pl-4 space-y-1">
               {mEvents.map((event) => (
-                <li key={event.id} className="flex justify-between items-center">
+                <li
+                  key={event.id}
+                  className="flex justify-between items-center hover:bg-green-100/60 rounded px-1 py-0.5 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation(); // ไม่ให้เด้งไปเปิดเดือนใหญ่
+                    openEditModal(event);
+                  }}
+                  title="กดเพื่อแก้ไขกิจกรรมนี้"
+                >
                   <span>
                     {(event.start as string).split("T")[0]} — {event.title}
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteEvent(event.id as string);
-                    }}
-                    className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded hover:bg-red-600"
-                  >
-                    ลบ
-                  </button>
                 </li>
               ))}
             </ul>
@@ -323,14 +334,14 @@ export default function Calendartwo() {
           </div>
         )}
 
-        {/* ปฏิทินของเดือน */}
+        {/* ปฏิทินของเดือน (การ์ดเล็ก) */}
         <FullCalendar
           key={`${year}-${month}`}
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale={thLocale}
           initialDate={startDate}
-          selectable={true}
+          selectable
           select={handleSelect}
           dateClick={handleDateClick}
           headerToolbar={{ left: "", center: "title", right: "" }}
@@ -338,7 +349,11 @@ export default function Calendartwo() {
           height="auto"
           contentHeight={150}
           aspectRatio={1.1}
-          eventDisplay="none"
+          eventDisplay="auto"
+          eventContent={renderEvent}
+          dayMaxEventRows={2}
+          moreLinkClick="popover"
+          dayCellClassNames={() => ["cursor-pointer", "hover:bg-gray-50"]}
           dayCellContent={(arg) => (
             <span className="text-[10px] font-medium">{arg.dayNumberText}</span>
           )}
@@ -348,6 +363,17 @@ export default function Calendartwo() {
   };
 
   /* ---------- UI ---------- */
+  // ปิดโมดัล (เดือน/เพิ่มกิจกรรม/แก้ไขกิจกรรม) เมื่อคลิกฉากหลัง
+  const onBackdropMonth: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.currentTarget === e.target) setSelectedMonth(null);
+  };
+  const onBackdropAdd: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.currentTarget === e.target) setModalOpen(false);
+  };
+  const onBackdropEdit: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.currentTarget === e.target) setEditOpen(false);
+  };
+
   return (
     <div className="p-6 bg-[#f0fdfb] min-h-screen relative">
       {/* Header */}
@@ -357,17 +383,27 @@ export default function Calendartwo() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="border rounded px-3 py-1 text-teal-700 bg-white"
+            className="border rounded px-3 py-1 text-teal-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+            title="เลือกปี"
           >
             <option value={2024}>ปี 2567 (2024)</option>
             <option value={2025}>ปี 2568 (2025)</option>
             <option value={2026}>ปี 2569 (2026)</option>
           </select>
 
+          <button
+            onClick={() => setSelectedMonth(new Date().getMonth())}
+            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition-colors cursor-pointer"
+            title="ไปเดือนปัจจุบัน"
+          >
+            เดือนนี้
+          </button>
+
           {/* ไปหน้าจองบริการ */}
           <button
             onClick={() => navigate("/findproviders")}
-            className="px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+            className="px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors cursor-pointer"
+            title="ไปหน้าจองผู้ให้บริการ"
           >
             🛠️ จองบริการ
           </button>
@@ -376,9 +412,10 @@ export default function Calendartwo() {
           <div className="relative">
             <button
               onClick={() => setPanelOpen((v) => !v)}
-              className={`relative rounded-full p-2 border transition
-                ${unreadCount > 0 ? "bg-red-600 text-white border-red-700" : "bg-white text-teal-700 border-gray-300"}`}
+              className={`relative rounded-full p-2 border transition-colors cursor-pointer
+                ${unreadCount > 0 ? "bg-red-600 text-white border-red-700 hover:bg-red-700" : "bg-white text-teal-700 border-gray-300 hover:bg-gray-50"}`}
               aria-label="Notifications"
+              title="เปิด/ปิดการแจ้งเตือน"
             >
               <span className="text-lg">🔔</span>
               {unreadCount > 0 && (
@@ -395,13 +432,15 @@ export default function Calendartwo() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setNotis(prev => prev.map(n => ({ ...n, read: true })))}
-                      className="text-sm text-emerald-700 hover:underline"
+                      className="text-sm text-emerald-700 hover:underline cursor-pointer"
+                      title="ทำเป็นอ่านแล้วทั้งหมด"
                     >
                       อ่านทั้งหมด
                     </button>
                     <button
                       onClick={() => setPanelOpen(false)}
-                      className="text-sm text-gray-500 hover:underline"
+                      className="text-sm text-gray-500 hover:underline cursor-pointer"
+                      title="ปิดแผงแจ้งเตือน"
                     >
                       ปิด
                     </button>
@@ -413,21 +452,14 @@ export default function Calendartwo() {
                   ) : (
                     <ul className="divide-y">
                       {notis.map(n => (
-                        <li key={n.id} className={`px-3 py-2 ${n.read ? "bg-white" : "bg-red-50"}`}>
+                        <li
+                          key={n.id}
+                          className={`px-3 py-2 transition-colors ${n.read ? "bg-white" : "bg-red-50 hover:bg-red-100"} cursor-default`}
+                        >
                           <div className="text-sm">{n.title}</div>
                           <div className="text-xs text-gray-500">
                             กำหนด: {n.dueDate} · บันทึกเมื่อ {new Date(n.createdAt).toLocaleString()}
                           </div>
-                          {!n.read && (
-                            <div className="mt-1">
-                              <button
-                                onClick={() => setNotis(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-                                className="text-xs text-emerald-700 hover:underline"
-                              >
-                                ทำเป็นอ่านแล้ว
-                              </button>
-                            </div>
-                          )}
                         </li>
                       ))}
                     </ul>
@@ -439,24 +471,6 @@ export default function Calendartwo() {
         </div>
       </div>
 
-      {/* Summary Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-sm text-gray-500">สรุปเก็บเกี่ยวทั้งปี</div>
-          <div className="text-2xl font-bold text-teal-700">{sumHarvestKg.toLocaleString()} กก.</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-sm text-gray-500">สรุปใช้ปุ๋ยทั้งปี</div>
-          <div className="text-2xl font-bold text-teal-700">{sumFertilizerKg.toLocaleString()} กก.</div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-sm text-gray-500">บันทึกกิจกรรมปีนี้</div>
-          <div className="text-2xl font-bold text-teal-700">
-            {events.filter(e => new Date(e.start as string).getFullYear() === year).length} รายการ
-          </div>
-        </div>
-      </div>
-
       {/* Year grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
@@ -464,30 +478,40 @@ export default function Calendartwo() {
 
       {/* Popup เดือนใหญ่ + คำแนะนำ + ปุ่มลัด */}
       {selectedMonth !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-4 w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 cursor-pointer"
+          onClick={onBackdropMonth}
+          title="คลิกพื้นหลังเพื่อปิด"
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-4 w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto cursor-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xl font-bold text-teal-700">
                 {monthNames[selectedMonth]} / {year}
               </h3>
               <div className="flex gap-2">
                 <button
-                  onClick={() => navigate("/services")}
-                  className="px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                  onClick={() => navigate("/findproviders")}
+                  className="px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors cursor-pointer"
+                  title="ไปหน้าจองผู้ให้บริการ"
                 >
                   🛠️ จองบริการ
                 </button>
                 {monthEvents(selectedMonth).some(e => e.extendedProps?.etype === "fertilize") && (
                   <button
                     onClick={() => navigate("/fertilizer")}
-                    className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700"
+                    className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer"
+                    title="ไปเครื่องมือคำนวณปุ๋ย"
                   >
                     🧮 คำนวณปุ๋ย
                   </button>
                 )}
                 <button
                   onClick={() => setSelectedMonth(null)}
-                  className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors cursor-pointer"
+                  title="ปิดหน้าต่าง"
                 >
                   ปิด
                 </button>
@@ -504,21 +528,29 @@ export default function Calendartwo() {
               </ul>
             </div>
 
+            {/* ปฏิทินของเดือน (ป๊อปอัพใหญ่) */}
             <FullCalendar
               key={`popup-${year}-${selectedMonth}`}
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               locale={thLocale}
               initialDate={new Date(year, selectedMonth ?? 0, 1)}
-              selectable={true}
+              selectable
               select={handleSelect}
-              dateClick={handleDateClick}
+              dateClick={(info) => {
+                setNewEventRange({ start: info.dateStr });
+                setModalOpen(true); // ✅ คลิกวันแล้วเปิดฟอร์มเพิ่มทันที
+              }}
               headerToolbar={{ left: "prev,next today", center: "title" }}
               buttonText={{ prev: "◀", next: "▶", today: "วันนี้" }}
               events={events}
               height="auto"
               contentHeight={500}
-              eventDisplay="none"
+              eventDisplay="auto"
+              eventContent={renderEvent}
+              dayMaxEventRows={3}
+              moreLinkClick="popover"
+              dayCellClassNames={() => ["cursor-pointer", "hover:bg-gray-50"]}
               dayCellContent={(arg) => (
                 <span className="text-sm font-semibold">{arg.dayNumberText}</span>
               )}
@@ -527,10 +559,17 @@ export default function Calendartwo() {
         </div>
       )}
 
-      {/* Modal เพิ่มกิจกรรม */}
+      {/* Modal เพิ่มกิจกรรม (สร้างใหม่) */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-[520px] max-w-[95vw]">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 cursor-pointer"
+          onClick={onBackdropAdd}
+          title="คลิกพื้นหลังเพื่อปิด"
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-[520px] max-w-[95vw] cursor-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-bold text-teal-700 mb-4">เพิ่มกิจกรรม</h3>
 
             <div className="grid grid-cols-2 gap-3">
@@ -539,7 +578,8 @@ export default function Calendartwo() {
                 <select
                   value={etype}
                   onChange={(e) => setEtype(e.target.value as EType)}
-                  className="w-full border px-3 py-2 rounded"
+                  className="w-full border px-3 py-2 rounded hover:bg-gray-50 cursor-pointer transition-colors"
+                  title="เลือกประเภทกิจกรรม"
                 >
                   <option value="plant">ปลูก</option>
                   <option value="prune">ตัดแต่งกิ่ง</option>
@@ -551,7 +591,7 @@ export default function Calendartwo() {
               </div>
 
               <div className="col-span-2">
-                <label className="text-sm text-gray-600">ชื่อกิจกรรม (ไม่ใส่ก็ได้)</label>
+                <label className="text-sm text-gray-600">ชื่อกิจกรรม</label>
                 <input
                   type="text"
                   placeholder={`เช่น ${defaultName(etype)}`}
@@ -601,24 +641,122 @@ export default function Calendartwo() {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors cursor-pointer"
+                title="ยกเลิก"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleSaveEvent}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer"
+                title="บันทึกกิจกรรม"
               >
                 บันทึก
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="mt-3 text-right">
+      {/* Modal แก้ไขกิจกรรม */}
+      {editOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 cursor-pointer"
+          onClick={onBackdropEdit}
+          title="คลิกพื้นหลังเพื่อปิด"
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-[560px] max-w-[95vw] cursor-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-teal-700 mb-4">แก้ไขกิจกรรม</h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-1">
+                <label className="text-sm text-gray-600">วันที่</label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full border px-3 py-2 rounded"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="text-sm text-gray-600">ประเภท</label>
+                <select
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value as EType)}
+                  className="w-full border px-3 py-2 rounded hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <option value="plant">ปลูก</option>
+                  <option value="prune">ตัดแต่งกิ่ง</option>
+                  <option value="fertilize">ใส่ปุ๋ย</option>
+                  <option value="water">รดน้ำ</option>
+                  <option value="harvest">เก็บเกี่ยว</option>
+                  <option value="spray">พ่นโดรน</option>
+                </select>
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-sm text-gray-600">ชื่อกิจกรรม</label>
+                <input
+                  type="text"
+                  placeholder={`เช่น ${defaultName(editType)}`}
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full border px-3 py-2 rounded"
+                />
+              </div>
+
+              {editType === "fertilize" && (
+                <div className="col-span-2">
+                  <label className="text-sm text-gray-600">ปริมาณปุ๋ย (กก.)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editFert}
+                    onChange={(e) => setEditFert(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                </div>
+              )}
+
+              {editType === "harvest" && (
+                <div className="col-span-2">
+                  <label className="text-sm text-gray-600">น้ำหนักผลผลิต (กก.)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editHarv}
+                    onChange={(e) => setEditHarv(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                </div>
+              )}
+
+              <div className="col-span-2">
+                <label className="text-sm text-gray-600">บันทึกเพิ่มเติม</label>
+                <textarea
+                  placeholder="โน้ตสั้น ๆ"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  className="w-full border px-3 py-2 rounded"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
               <button
-                onClick={() => navigate("/services")}
-                className="text-emerald-700 underline underline-offset-4"
+                onClick={() => setEditOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors cursor-pointer"
               >
-                ต้องการผู้ช่วย? จองบริการเลย →
+                ยกเลิก
+              </button>
+              <button
+                onClick={saveEdit}
+                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors cursor-pointer"
+              >
+                บันทึก
               </button>
             </div>
           </div>
@@ -626,4 +764,13 @@ export default function Calendartwo() {
       )}
     </div>
   );
+}
+
+/* ---------- Recommendations (เดิม) ---------- */
+function recommendationsForMonth(m: number) {
+  const recs: string[] = [];
+  if (m === 1 || m === 2) recs.push("ยังไม่มีกิจกรรมตัดแต่งกิ่งช่วงปลายฤดูหนาว แนะนำวางแผนตัดแต่งเพื่อกระตุ้นตาดอก");
+  if (m >= 2 && m <= 5) recs.push("เข้าหน้าร้อน ควรรดน้ำสม่ำเสมอเพื่อลดความเครียดของต้นลำไย");
+  if (recs.length === 0) recs.push("ไม่มีคำแนะนำเฉพาะ แผนงานเดือนนี้ดูครบถ้วนแล้ว ✅");
+  return recs;
 }

@@ -285,12 +285,7 @@ export default function FindProviders() {
     setFormNote("");
   };
 
-  /** ✅ สร้างการจอง:
-   *  - บันทึกประวัติฝั่งผู้ใช้
-   *  - ส่งคำขอไปยังผู้ให้บริการ (incoming_bookings)
-   *  - กระตุ้น provider ให้รีเฟรชผ่าน CustomEvent + BroadcastChannel
-   *  - ทำกระดิ่งผู้ให้บริการ (optional)
-   */
+  /** ✅ สร้างการจอง */
   const createBooking = (p: Provider) => {
     const areaRai = formArea ? Number(formArea) : undefined;
 
@@ -321,10 +316,8 @@ export default function FindProviders() {
     const nextInbox = [newInboxItem, ...inbox];
     lsSave(LS_KEYS.incoming, nextInbox);
 
-    // แจ้งหน้า ProviderSlotPage (ถ้าอยู่ route อื่นในหน้าเดียวกัน)
     window.dispatchEvent(new CustomEvent("incoming-booking-updated"));
 
-    // แจ้งต่างแท็บ/ต่าง route แบบ real-time
     try {
       const bc = new BroadcastChannel(BC_NAME);
       bc.postMessage({ type: "incoming-booking-updated" });
@@ -339,7 +332,7 @@ export default function FindProviders() {
       time: `${formatThaiTime(Date.now())} วันนี้`,
       type: "booking",
       isUnread: true,
-      link: "/provider-slot",
+      link: "/providerdetail",
     };
     lsSave(LS_KEYS.providerNoti, [newNoti, ...noti]);
     window.dispatchEvent(new CustomEvent("provider-noti-updated"));
@@ -392,7 +385,7 @@ export default function FindProviders() {
                 setBellOpen(next);
                 if (next) markAlertsRead();
               }}
-              className="relative p-2 rounded-full hover:bg-white border bg-white shadow-sm"
+              className="relative p-2 rounded-full hover:bg-gray-100 border bg-white shadow-sm cursor-pointer transition-colors"
               aria-label="การแจ้งเตือน"
             >
               <FiBell className="h-5 w-5" />
@@ -440,7 +433,8 @@ export default function FindProviders() {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-600 hover:bg-gray-100 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                  title="ล้างคำค้น"
                 >
                   ล้าง
                 </button>
@@ -450,7 +444,8 @@ export default function FindProviders() {
             <select
               value={serviceFilter}
               onChange={(e) => setServiceFilter(e.target.value)}
-              className="text-sm border rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="text-sm border rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-gray-50 transition-colors"
+              title="กรองตามบริการ"
             >
               {serviceOptions.map((op) => (
                 <option key={op} value={op}>
@@ -462,7 +457,7 @@ export default function FindProviders() {
             {/* เรียงตาม (placeholder) */}
             <div className="flex items-center gap-2">
               <span className="text-sm">เรียงตาม:</span>
-              <select className="border rounded-xl px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select className="border rounded-xl px-3 py-2 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-gray-50 transition-colors" title="เรียงผลลัพธ์">
                 <option>พื้นที่บริการใกล้ที่สุด</option>
                 <option>ประหยัดที่สุด</option>
                 <option>ว่างบริการ</option>
@@ -490,7 +485,7 @@ export default function FindProviders() {
               providersToRender.map((p) => (
                 <div
                   key={p.id}
-                  className="bg-white rounded-xl shadow hover:shadow-md transition p-4 flex flex-col justify-between border"
+                  className="bg-white rounded-xl shadow hover:shadow-md transition-shadow p-4 flex flex-col justify-between border"
                 >
                   <div>
                     <div className="flex items-center gap-3 mb-3">
@@ -510,9 +505,7 @@ export default function FindProviders() {
                       <p className="text-gray-600">{p.available}</p>
                       <p className="text-gray-600">📍 {p.location}</p>
                       <p className="font-bold text-green-600 mt-2">{p.price}</p>
-                      <p className="text-yellow-700">
-                        ⭐ {p.rating} <span className="text-gray-500">({p.reviews} รีวิว)</span>
-                      </p>
+                      <p className="text-yellow-700"></p>
                     </div>
                   </div>
 
@@ -520,13 +513,15 @@ export default function FindProviders() {
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={() => navigate("/providerdetail")}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-sm"
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-sm cursor-pointer transition-colors"
+                      title="ดูรายละเอียดผู้ให้บริการ"
                     >
                       ดูรายละเอียด
                     </button>
                     <button
                       onClick={() => openForm(p.id)}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm cursor-pointer transition-colors"
+                      title="จองบริการ"
                     >
                       จองบริการ
                     </button>
@@ -545,7 +540,7 @@ export default function FindProviders() {
                             step="0.1"
                             value={formArea}
                             onChange={(e) => setFormArea(e.target.value)}
-                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                             placeholder="เช่น 5"
                           />
                         </div>
@@ -555,7 +550,7 @@ export default function FindProviders() {
                             type="date"
                             value={formDate}
                             onChange={(e) => setFormDate(e.target.value)}
-                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                           />
                         </div>
                         <div className="col-span-2">
@@ -564,7 +559,7 @@ export default function FindProviders() {
                             type="text"
                             value={formNote}
                             onChange={(e) => setFormNote(e.target.value)}
-                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                             placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
                           />
                         </div>
@@ -572,13 +567,13 @@ export default function FindProviders() {
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => createBooking(p)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm cursor-pointer transition-colors"
                         >
                           บันทึกการจอง
                         </button>
                         <button
                           onClick={() => setFormOpenId(null)}
-                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg text-sm"
+                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg text-sm cursor-pointer transition-colors"
                         >
                           ยกเลิก
                         </button>
@@ -604,7 +599,8 @@ export default function FindProviders() {
               {sortedBookings.length > 0 && (
                 <button
                   onClick={clearAll}
-                  className="text-xs text-red-600 hover:underline"
+                  className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded cursor-pointer transition-colors"
+                  title="ลบประวัติทั้งหมด"
                 >
                   ลบทั้งหมด
                 </button>
@@ -626,7 +622,8 @@ export default function FindProviders() {
                       <div key={year} className="border rounded-lg">
                         <button
                           onClick={() => setOpenYear(isOpen ? null : year)}
-                          className="w-full flex items-center justify-between px-3 py-2"
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 rounded-t-lg cursor-pointer transition-colors"
+                          title={isOpen ? "ยุบรายการปีนี้" : "ขยายรายการปีนี้"}
                         >
                           <span className="font-medium">{year}</span>
                           <span className="text-xs text-gray-500">
@@ -639,12 +636,10 @@ export default function FindProviders() {
                             {preview.map((b) => (
                               <div
                                 key={b.id}
-                                className="border rounded p-3 hover:bg-gray-50"
+                                className="border rounded p-3 hover:bg-gray-50 transition-colors"
                               >
                                 <div className="flex items-center justify-between">
-                                  <div className="font-medium">
-                                    {b.providerName}
-                                  </div>
+                                  <div className="font-medium">{b.providerName}</div>
                                   <span
                                     className={`text-xs px-2 py-0.5 rounded ${
                                       b.status === "ยกเลิก"
@@ -676,14 +671,16 @@ export default function FindProviders() {
                                   {b.status !== "ยกเลิก" && (
                                     <button
                                       onClick={() => cancelBooking(b.id)}
-                                      className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded"
+                                      className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded cursor-pointer transition-colors"
+                                      title="ยกเลิกรายการนี้"
                                     >
                                       ยกเลิก
                                     </button>
                                   )}
                                   <button
                                     onClick={() => deleteBooking(b.id)}
-                                    className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                                    className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded cursor-pointer transition-colors"
+                                    title="ลบรายการนี้"
                                   >
                                     ลบ
                                   </button>
@@ -694,9 +691,9 @@ export default function FindProviders() {
                             {items.length > 3 && (
                               <button
                                 onClick={() => setShowAllYear(year)}
-                                className="w-full text-xs mt-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded"
+                                className="w-full text-xs mt-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded cursor-pointer transition-colors"
                               >
-                                ดูทั้งหมด {items.length} รายการของปี {year}
+                                ดูทั้งหมด {items.length}
                               </button>
                             )}
                           </div>
@@ -726,7 +723,6 @@ export default function FindProviders() {
 
 /* ========= Child: All bookings modal with search + tabs + pagination ========= */
 function AllBookingsModal({
-  year,
   items,
   onClose,
   onCancel,
@@ -761,31 +757,51 @@ function AllBookingsModal({
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [q, tab, items]);
 
+  // ปิดเมื่อคลิกฉากหลัง
+  const onBackdropClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.currentTarget === e.target) onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-3xl rounded-xl shadow-lg p-4">
+    <div
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 cursor-pointer"
+      onClick={onBackdropClick}
+      title="คลิกเพื่อปิด"
+    >
+      <div
+        className="bg-white w-full max-w-3xl rounded-xl shadow-lg p-4 cursor-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">รายการทั้งหมดของปี {year}</h3>
-          <button onClick={onClose} className="text-sm text-gray-600">
+          <h3 className="font-semibold">รายการทั้งหมด</h3>
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-600 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors"
+            title="ปิด"
+          >
             ปิด
           </button>
         </div>
 
         <div className="flex gap-2 mb-3">
-          {["ทั้งหมด", "รอยืนยัน", "ยืนยันแล้ว", "ยกเลิก"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t === "ทั้งหมด" ? "ทั้งหมด" : (t as BookingStatus))}
-              className={`text-sm px-3 py-1 rounded ${
-                tab === t ? "bg-green-600 text-white" : "bg-gray-100"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+          {["ทั้งหมด", "รอยืนยัน", "ยืนยันแล้ว", "ยกเลิก"].map((t) => {
+            const active = tab === (t as any);
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t === "ทั้งหมด" ? "ทั้งหมด" : (t as BookingStatus))}
+                className={`text-sm px-3 py-1 rounded transition-colors cursor-pointer ${
+                  active ? "bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200"
+                }`}
+                title={`กรอง: ${t}`}
+              >
+                {t}
+              </button>
+            );
+          })}
           <input
             placeholder="ค้นหาชื่อผู้ให้บริการ/หมายเหตุ"
-            className="flex-1 border rounded px-2 py-1 text-sm"
+            className="flex-1 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -793,7 +809,7 @@ function AllBookingsModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-auto">
           {pageItems.map((b) => (
-            <div key={b.id} className="border rounded p-3">
+            <div key={b.id} className="border rounded p-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="font-medium">{b.providerName}</div>
                 <span
@@ -824,14 +840,16 @@ function AllBookingsModal({
                 {b.status !== "ยกเลิก" && (
                   <button
                     onClick={() => onCancel(b.id)}
-                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded"
+                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded cursor-pointer transition-colors"
+                    title="ยกเลิก"
                   >
                     ยกเลิก
                   </button>
                 )}
                 <button
                   onClick={() => onDelete(b.id)}
-                  className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded cursor-pointer transition-colors"
+                  title="ลบ"
                 >
                   ลบ
                 </button>
@@ -848,14 +866,16 @@ function AllBookingsModal({
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1 text-sm rounded bg-gray-100 disabled:opacity-50"
+              className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:hover:bg-gray-100 cursor-pointer transition-colors"
+              title="ก่อนหน้า"
             >
               ก่อนหน้า
             </button>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1 text-sm rounded bg-gray-100 disabled:opacity-50"
+              className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:hover:bg-gray-100 cursor-pointer transition-colors"
+              title="ถัดไป"
             >
               ถัดไป
             </button>

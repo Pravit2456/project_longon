@@ -9,8 +9,8 @@ type ProfessionType =
   | "fertilizer_spread"  // ใส่ปุ๋ย (คน/โดรน/รถ)
   | "pruning"            // ตัดแต่งกิ่ง
   | "harvest"            // เก็บเกี่ยว
-  | "irrigation"         // รดน้ำ/ระบบน้ำ
-  | "grass_cutting";     // ตัดหญ้า   ✅ (ใหม่)
+  | "irrigation"         // รดน้ำ
+  | "grass_cutting";     // ตัดหญ้า
 
 type FieldType = "text" | "number" | "select" | "yesno";
 
@@ -20,14 +20,14 @@ type FieldSpec = {
   type: FieldType;
   unit?: string;
   placeholder?: string;
-  options?: string[]; // for select
+  options?: string[];
   required?: boolean;
 };
 
 type ProfessionSpec = {
   label: string;
-  fields: FieldSpec[];      // ช่องหลัก (ต้องมี)
-  related?: FieldSpec[];    // ช่องที่เกี่ยวข้อง (เพิ่มเติม)
+  fields: FieldSpec[];
+  related?: FieldSpec[];
 };
 
 type ProfessionEntry = {
@@ -40,11 +40,11 @@ type DraftPayload = {
   personal?: {};
   professions: ProfessionEntry[];
   documents?: {
-    photo1?: string; // dataURL preview
+    photo1?: string;
   };
 };
 
-/* ================= Catalog: อาชีพและช่องที่ต้องกรอก ================= */
+/* ================= Catalog ================= */
 const CATALOG: Record<ProfessionType, ProfessionSpec> = {
   spray_drone: {
     label: "พ่นโดรน",
@@ -85,41 +85,25 @@ const CATALOG: Record<ProfessionType, ProfessionSpec> = {
       { key: "truck", label: "มีรถขนส่ง", type: "yesno" },
     ],
   },
-    irrigation: {
-    label: "รดน้ำ", // เปลี่ยนชื่อ ไม่เอาคำว่า ระบบน้ำ
+  irrigation: {
+    label: "รดน้ำ",
     fields: [
-      // ✅ ช่องที่เกี่ยวกับ "การรดน้ำ" โดยตรง
       { key: "method", label: "รูปแบบการรดน้ำ", type: "select",
         options: ["สายยาง/รถเข็นถัง", "สปริงเกอร์เคลื่อนที่", "รถบรรทุกน้ำ", "โดรนพ่นน้ำ"], required: true },
-
-      { key: "waterRateLpm", label: "อัตราการให้น้ำ", type: "number",
-        unit: "ลิตร/นาที", placeholder: "เช่น 60", required: true },
-
-      { key: "coverageRaiHour", label: "พื้นที่ที่รดได้", type: "number",
-        unit: "ไร่/ชั่วโมง", placeholder: "เช่น 1.2" },
-
-      { key: "volumePerPlotL", label: "ปริมาณน้ำต่อแปลง", type: "number",
-        unit: "ลิตร/แปลง", placeholder: "เช่น 500" },
-
-      { key: "durationPerPlotMin", label: "เวลาที่ใช้ต่อแปลง", type: "number",
-        unit: "นาที/แปลง", placeholder: "เช่น 20" },
-
-      { key: "teamSize", label: "จำนวนคนในทีม", type: "number",
-        unit: "คน", required: true },
+      { key: "waterRateLpm", label: "อัตราการให้น้ำ", type: "number", unit: "ลิตร/นาที", placeholder: "เช่น 60", required: true },
+      { key: "coverageRaiHour", label: "พื้นที่ที่รดได้", type: "number", unit: "ไร่/ชั่วโมง", placeholder: "เช่น 1.2" },
+      { key: "volumePerPlotL", label: "ปริมาณน้ำต่อแปลง", type: "number", unit: "ลิตร/แปลง", placeholder: "เช่น 500" },
+      { key: "durationPerPlotMin", label: "เวลาที่ใช้ต่อแปลง", type: "number", unit: "นาที/แปลง", placeholder: "เช่น 20" },
+      { key: "teamSize", label: "จำนวนคนในทีม", type: "number", unit: "คน", required: true },
     ],
     related: [
-      // ตัวเลือกเสริมที่ยัง “เกี่ยวกับการรดน้ำ” โดยตรง
-      { key: "waterSource", label: "แหล่งน้ำ", type: "select",
-        options: ["บ่อ/สระ", "คลอง/ลำธาร", "ประปา", "น้ำบาดาล"] },
-
+      { key: "waterSource", label: "แหล่งน้ำ", type: "select", options: ["บ่อ/สระ", "คลอง/ลำธาร", "ประปา", "น้ำบาดาล"] },
       { key: "includeWaterCost", label: "รวมค่าน้ำในราคา", type: "yesno" },
-
       { key: "nightWork", label: "รับงานกลางคืน", type: "yesno" },
     ],
-  
   },
   grass_cutting: {
-    label: "ตัดหญ้า", // ✅ ใหม่
+    label: "ตัดหญ้า",
     fields: [
       { key: "method", label: "ประเภทงาน", type: "select", options: ["เครื่องสะพายบ่า", "รถตัดหญ้า"], required: true },
       { key: "teamSize", label: "จำนวนคนในทีม", type: "number", unit: "คน", required: true },
@@ -130,7 +114,7 @@ const CATALOG: Record<ProfessionType, ProfessionSpec> = {
 
 /* ============== util ============== */
 const STORAGE_KEY = "providerDraft_v1";
-const id = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 function loadDraft(): DraftPayload {
   try {
@@ -148,37 +132,34 @@ function saveDraft(d: DraftPayload) {
 export default function ServerSetup() {
   const navigate = useNavigate();
 
-  // โหลด draft
   const [draft, setDraft] = useState<DraftPayload>(() => loadDraft());
   const [currentType, setCurrentType] = useState<ProfessionType | "">("");
   const spec = useMemo(() => (currentType ? CATALOG[currentType] : null), [currentType]);
 
-  // ฟอร์มอาชีพปัจจุบัน (dynamic)
   const [form, setForm] = useState<Record<string, any>>({});
-
-  // เอกสาร
   const [photo1, setPhoto1] = useState<File | null>(null);
 
-  // เมื่อเปลี่ยนอาชีพ → reset ฟอร์มตามคีย์ที่ต้องใช้
+  // เมื่อเปลี่ยนบริการ → เซ็ตฟอร์มตามสเปก
   useEffect(() => {
     if (!spec) return;
     const next: Record<string, any> = {};
     [...spec.fields, ...(spec.related ?? [])].forEach((f) => {
-      if (f.type === "yesno") next[f.key] = "no";
-      else next[f.key] = "";
+      next[f.key] = f.type === "yesno" ? "no" : "";
     });
     setForm(next);
   }, [spec]);
 
-  const onChangeField = (key: string, value: any) => {
-    setForm((p) => ({ ...p, [key]: value }));
+  const onChangeField = (key: string, value: any) => setForm((p) => ({ ...p, [key]: value }));
+
+  const resetSelection = () => {
+    setCurrentType("");
+    setForm({});
   };
 
-  // เพิ่มอาชีพเข้า draft
   const pushProfession = () => {
     if (!currentType || !spec) return;
 
-    // ตรวจฟิลด์ที่ required
+    // validate required
     const missing: string[] = [];
     spec.fields.forEach((f) => {
       if (f.required && (form[f.key] === "" || form[f.key] === undefined || form[f.key] === null)) {
@@ -190,7 +171,7 @@ export default function ServerSetup() {
       return;
     }
 
-    const entry: ProfessionEntry = { id: id(), type: currentType, data: form };
+    const entry: ProfessionEntry = { id: makeId(), type: currentType, data: form };
     const next = { ...draft, professions: [...(draft.professions || []), entry] };
     setDraft(next);
     saveDraft(next);
@@ -226,26 +207,41 @@ export default function ServerSetup() {
           <div className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 shadow-sm border border-[#d9eadf]">
             <img src="/images/logo.png" alt="Logo" className="h-15 w-15 object-contain" />
             <h1 className="text-xl sm:text-2xl font-bold text-[#2f6b4f]">
-              ลงทะเบียนผู้ให้บริการ (หลายอาชีพ) <span className="ml-1">🧑‍🌾</span>
+              ลงทะเบียนผู้ให้บริการ <span className="ml-1">🧑‍🌾</span>
             </h1>
           </div>
-          <p className="mt-2 text-sm text-slate-600">เลือกอาชีพ → กรอกช่องเฉพาะทาง → บันทึก แล้วเพิ่มอาชีพถัดไปได้</p>
+          <p className="mt-2 text-sm text-slate-600">
+            เลือกบริการ → กรอกช่องเฉพาะทาง → บันทึก แล้วเพิ่มบริการถัดไปได้
+          </p>
         </header>
 
-        {/* ====== เลือกอาชีพ & ฟอร์มเฉพาะ ====== */}
+        {/* ====== เลือกบริการ & ฟอร์มเฉพาะ ====== */}
         <section className="bg-white rounded-2xl shadow-sm border border-[#dbeee2] p-5 mb-6">
-          <h2 className="font-semibold text-slate-800 mb-4">เลือกอาชีพและกรอกรายละเอียด</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              เลือกบริการ
+              {/* ปุ่ม + ข้างหลังคำว่า เลือกบริการ */}
+              <button
+                type="button"
+                onClick={resetSelection}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                title="เพิ่มบริการที่ต้องการเลือกอีก"
+              >
+                <FiPlus />
+              </button>
+            </h2>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-600 mb-1">อาชีพ</label>
+              <label className="block text-sm text-slate-600 mb-1">บริการ</label>
               <div className="relative">
                 <select
                   value={currentType}
                   onChange={(e) => setCurrentType(e.target.value as ProfessionType)}
                   className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-9 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 >
-                  <option value="">— เลือกอาชีพ —</option>
+                  <option value="">— เลือกบริการ —</option>
                   {Object.entries(CATALOG).map(([k, v]) => (
                     <option key={k} value={k}>
                       {v.label}
@@ -279,45 +275,44 @@ export default function ServerSetup() {
                 </>
               )}
 
+              {/* ปุ่มเฉพาะ: ยกเลิก / บันทึก */}
               <div className="flex flex-col sm:flex-row gap-2 mt-5">
                 <button
-                  onClick={() => {
-                    pushProfession();
-                    setCurrentType(""); // reset เพื่อเพิ่มอาชีพใหม่
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
+                  onClick={resetSelection}
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-200 px-4 py-2 text-slate-800 hover:bg-slate-300"
+                  title="ยกเลิกและกลับไปเลือกบริการใหม่"
                 >
-                  <FiPlus />
-                  บันทึกอาชีพนี้ & เพิ่มอาชีพต่อ
+                  ยกเลิก
                 </button>
                 <button
                   onClick={() => {
                     pushProfession();
-                    handleFinish();
+                    resetSelection();
                   }}
-                  className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700"
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
+                  title="บันทึกบริการนี้"
                 >
-                  บันทึกอาชีพนี้ & เสร็จสิ้น
+                  บันทึก
                 </button>
               </div>
             </>
           )}
         </section>
 
-        {/* ====== อาชีพที่บันทึกแล้ว ====== */}
+        {/* ====== บริการที่บันทึกแล้ว ====== */}
         <section className="bg-white rounded-2xl shadow-sm border border-[#dbeee2] p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-slate-800">อาชีพที่เพิ่มแล้ว</h2>
+            <h2 className="font-semibold text-slate-800">บริการที่เพิ่มแล้ว</h2>
             <button
-              onClick={() => setCurrentType("")}
+              onClick={resetSelection}
               className="text-sm text-emerald-700 hover:underline"
             >
-              + เพิ่มอาชีพที่ทำได้
+              + เพิ่มบริการที่ทำได้
             </button>
           </div>
 
           {draft.professions.length === 0 ? (
-            <p className="text-sm text-slate-500">ยังไม่ได้เพิ่มอาชีพ</p>
+            <p className="text-sm text-slate-500">ยังไม่ได้เพิ่มบริการ</p>
           ) : (
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {draft.professions.map((p) => (
@@ -331,7 +326,7 @@ export default function ServerSetup() {
                       <button
                         onClick={() => removeProfession(p.id)}
                         className="text-red-600 hover:text-red-700"
-                        title="ลบอาชีพนี้"
+                        title="ลบบริการนี้"
                       >
                         <FiTrash2 />
                       </button>
@@ -344,7 +339,7 @@ export default function ServerSetup() {
                         (x) => x.key === k
                       );
                       if (!fs) return null;
-                      const renderYesNo = (fs.type === "yesno") ? (v === "yes" ? "ใช่" : "ไม่") : v;
+                      const renderYesNo = fs.type === "yesno" ? (v === "yes" ? "ใช่" : "ไม่") : v;
                       return (
                         <div key={k} className="flex justify-between gap-2 py-0.5">
                           <span className="text-slate-500">{fs.label}</span>
@@ -450,7 +445,9 @@ function Field({
           <input
             type={spec.type === "number" ? "number" : "text"}
             value={value ?? ""}
-            onChange={(e) => onChange(spec.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}
+            onChange={(e) =>
+              onChange(spec.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)
+            }
             placeholder={spec.placeholder}
             className="w-full rounded-l-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
           />

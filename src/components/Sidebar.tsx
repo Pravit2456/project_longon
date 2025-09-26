@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Globe2, Leaf, Calendar, Bell, Settings, FolderHeart } from 'lucide-react';
+import {  Leaf, Calendar, Bell, Settings, FolderHeart } from 'lucide-react';
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -8,7 +8,6 @@ export default function Sidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
-    { path: '/dashboard', label: 'แดชบอร์ด', icon: <Globe2 size={18} /> },
     { path: '/plot', label: 'แปลงของฉัน', icon: <Leaf size={18} /> },
     { path: '/calendar', label: 'ปฏิทินกิจกรรม', icon: <Calendar size={18} /> },
     { path: '/findproviders', label: 'จองคิวบริการ', icon: <FolderHeart size={18} /> },
