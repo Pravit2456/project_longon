@@ -59,13 +59,14 @@ function lsSave<T>(key: string, value: T) {
 }
 
 /* ---------- Initial demo data (ครั้งแรกเท่านั้น) ---------- */
+// ✅ ให้มี "รอเริ่มงาน" 2 งาน (j1, j2) และงานที่เหลือเป็น "กำลังดำเนินการ"
 const seedJobs: Job[] = [
   {
     id: "j1",
     title: "จัดแปลงนา - ไร่คุณสมศักดิ์",
     location: "อำเภอเมือง, จังหวัดลำปาง",
     date: "วันที่ 15 มกราคม 2025, 08:00-12:00",
-    status: "กำลังดำเนินการ",
+    status: "รอเริ่มงาน",
     price: "฿2,500",
     area: "5 ไร่",
   },
@@ -83,7 +84,7 @@ const seedJobs: Job[] = [
     title: "เก็บเกี่ยวลำไย - สวนลุงสมปอง",
     location: "อำเภอสันกำแพง, จังหวัดเชียงใหม่",
     date: "วันที่ 18 มกราคม 2025, 07:00-11:00",
-    status: "รอเริ่มงาน",
+    status: "กำลังดำเนินการ",
     price: "฿3,500",
     area: "6 ไร่",
   },
@@ -92,7 +93,7 @@ const seedJobs: Job[] = [
     title: "พ่นปุ๋ย - สวนยายทอง",
     location: "อำเภอแม่ริม, จังหวัดเชียงใหม่",
     date: "วันที่ 20 มกราคม 2025, 09:00-12:00",
-    status: "รอเริ่มงาน",
+    status: "กำลังดำเนินการ",
     price: "฿2,200",
     area: "4 ไร่",
   },
@@ -124,7 +125,8 @@ function JobItem({
       ? "bg-emerald-600 hover:bg-emerald-700"
       : "bg-slate-400 cursor-not-allowed";
 
-  const secondaryText = job.status === "รอเริ่มงาน" ? "ดูรายละเอียด" : job.status === "กำลังดำเนินการ" ? "ติดต่อผู้จ้าง" : "รายละเอียด";
+  const secondaryText =
+    job.status === "รอเริ่มงาน" ? "ดูรายละเอียด" : job.status === "กำลังดำเนินการ" ? "ติดต่อผู้จ้าง" : "รายละเอียด";
   const secondaryDisabled = job.status === "จบงาน";
 
   return (
@@ -167,7 +169,7 @@ function JobItem({
   );
 }
 
-/* ---------- History modal ---------- */
+/* ---------- History modal (เหมือนเดิม) ---------- */
 function HistoryModal({
   job,
   onClose,
@@ -180,8 +182,8 @@ function HistoryModal({
   onContact: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-4">
+    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold">รายละเอียดงาน (จบงาน)</h3>
           <button onClick={onClose} className="text-sm text-slate-600">ปิด</button>
@@ -201,6 +203,46 @@ function HistoryModal({
         <div className="flex gap-2 mt-4">
           <button onClick={onCalendar} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm">ดูในปฏิทินงาน</button>
           <button onClick={onContact} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded-lg text-sm">ดูโปรไฟล์ผู้จ้าง</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- NEW: Detail modal สำหรับงานที่ 'รอเริ่มงาน' ---------- */
+function DetailModal({
+  job,
+  onClose,
+  onGoSlot,
+}: {
+  job: Job;
+  onClose: () => void;
+  onGoSlot: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold">รายละเอียดงาน</h3>
+          <button onClick={onClose} className="text-sm text-slate-600">ปิด</button>
+        </div>
+        <div className="space-y-1 text-sm">
+          <div className="font-medium">{job.title}</div>
+          <div className="text-slate-600">{job.location}</div>
+          <div className="text-slate-600">{job.date}</div>
+          <div>ขนาดพื้นที่: {job.area}</div>
+          <div>ราคา: {job.price}</div>
+          <div>
+            สถานะ:{" "}
+            <span className="inline-flex px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 text-xs">
+              {job.status}
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button onClick={onClose} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded-lg text-sm">
+            ปิด
+          </button>
         </div>
       </div>
     </div>
@@ -275,16 +317,20 @@ export default function ServerPage() {
     );
   };
 
-  // ปุ่มรอง: นำทางตามสถานะ
+  // ปุ่มรอง: นำทาง/เปิดรายละเอียด ตามสถานะ
+  const [detailOpen, setDetailOpen] = useState<Job | null>(null);
+  const [historyOpen, setHistoryOpen] = useState<Job | null>(null);
+
   const handleSecondary = (id: string) => {
     const job = jobs.find((x) => x.id === id);
     if (!job) return;
+
     if (job.status === "รอเริ่มงาน") {
-      navigate("/provider-slot"); // ไปดู/ยืนยันคิว
+      setDetailOpen(job);           // เปิดป๊อปอัป
     } else if (job.status === "กำลังดำเนินการ") {
-      navigate("/profileview"); // ติดต่อผู้จ้าง
+      navigate("/profileview");     // ติดต่อผู้จ้าง
     } else {
-      setHistoryOpen(job); // จบงานแล้ว เปิด modal รายละเอียด
+      setHistoryOpen(job);          // ป๊อปอัปประวัติ
     }
   };
 
@@ -292,7 +338,7 @@ export default function ServerPage() {
   const currentJobs = jobs.filter((j) => j.status === "รอเริ่มงาน" || j.status === "กำลังดำเนินการ");
   const waitingJobs = jobs.filter((j) => j.status === "รอเริ่มงาน");
 
-  // ---------- ประวัติการรับงาน ----------
+  // ประวัติการรับงาน
   const history = useMemo(
     () =>
       jobs
@@ -300,7 +346,6 @@ export default function ServerPage() {
         .sort((a, b) => (b.finishedAt || 0) - (a.finishedAt || 0)),
     [jobs]
   );
-  const [historyOpen, setHistoryOpen] = useState<Job | null>(null);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans font-semibold">
@@ -432,12 +477,6 @@ export default function ServerPage() {
                       เสร็จงานเมื่อ: {new Date(h.finishedAt || 0).toLocaleString("th-TH")}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setHistoryOpen(h)}
-                    className="px-3 py-1.5 rounded-md text-sm bg-slate-200 text-slate-800 hover:bg-slate-300"
-                  >
-                    ดูรายละเอียด
-                  </button>
                 </li>
               ))}
             </ul>
@@ -445,7 +484,19 @@ export default function ServerPage() {
         </Section>
       </main>
 
-      {/* Modal รายละเอียดประวัติ */}
+      {/* Modal: รายละเอียดงาน (รอเริ่มงาน) */}
+      {detailOpen && (
+        <DetailModal
+          job={detailOpen}
+          onClose={() => setDetailOpen(null)}
+          onGoSlot={() => {
+            setDetailOpen(null);
+            navigate("/provider-slot");
+          }}
+        />
+      )}
+
+      {/* Modal: รายละเอียดประวัติ (จบงาน) */}
       {historyOpen && (
         <HistoryModal
           job={historyOpen}

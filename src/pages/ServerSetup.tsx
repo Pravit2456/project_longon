@@ -307,7 +307,6 @@ export default function ServerSetup() {
               onClick={resetSelection}
               className="text-sm text-emerald-700 hover:underline"
             >
-              + เพิ่มบริการที่ทำได้
             </button>
           </div>
 

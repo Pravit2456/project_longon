@@ -269,7 +269,7 @@ export default function ProviderSlotPage() {
             onClick={() => navigate("/serverpage")}
             className="inline-flex items-center gap-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1.5 text-sm cursor-pointer"
           >
-            กลับหน้า ServerPage
+            กลับหน้าหลัก
           </button>
         </div>
 
