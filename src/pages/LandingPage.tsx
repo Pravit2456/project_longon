@@ -1,7 +1,7 @@
 // src/pages/StartPage.tsx
 import { useNavigate } from "react-router-dom";
 
-export default function LandingPage() {
+export default function StartPage() {
   const navigate = useNavigate();
 
   const quickLogin = (role: "farmer" | "provider") => {
@@ -17,12 +17,12 @@ export default function LandingPage() {
       })
     );
 
-    // นำทางไปหน้าแรกของแต่ละบทบาท
+    // ✅ ไปหน้าเริ่มต้นตามบทบาท
     if (role === "farmer") {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } else {
-      // หมายเหตุ: เส้นทางในโปรเจกต์ของคุณสะกดว่า "/severpage"
-      navigate("/severpage");
+      // ✅ แก้สะกดเป็น /serverpage ให้ตรงกับเส้นทางจริง
+      navigate("/serverpage", { replace: true });
     }
   };
 
@@ -33,28 +33,28 @@ export default function LandingPage() {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 max-w-6xl">
-        {/* เกษตรกรทั่วไป */}
+        {/* เกษตรกร */}
         <div className="flex flex-col items-center">
           <img
             src="/images/landing1.png"
             alt="เกษตรกร"
             className="w-96 h-96 object-cover rounded-2xl shadow-lg"
           />
-          {/* ปุ่มเดิม: ถ้าจะไปหน้าล็อกอินจริง */}
-          {/* <button
-            onClick={() => navigate("/login")}
-            className="mt-6 px-8 py-3 text-lg bg-white rounded-full text-gray-800 font-semibold shadow hover:bg-gray-100"
-          >
-            ลงชื่อเข้าใช้งานสำหรับเกษตรกร
-          </button> */}
 
-          {/* โหมดทดลอง: เข้าใช้งานได้ทันที */}
+          {/* ไปหน้า Login จริง (ไม่ตั้งค่า auth ที่นี่) */}
           <button
-            onClick={() => quickLogin("farmer")}
+            onClick={() => navigate("/login", { state: { role: "farmer" } })}
             className="mt-6 px-8 py-3 text-lg bg-white rounded-full text-gray-800 font-semibold shadow hover:bg-gray-100"
           >
             ลงชื่อเข้าใช้งานสำหรับเกษตรกร
           </button>
+
+          {/* ปุ่มทดลองใช้ทันที */}
+          <button
+            onClick={() => quickLogin("farmer")}
+            className="mt-3 text-sm text-green-700 underline underline-offset-4 hover:text-green-800"
+          >
+         </button>
         </div>
 
         {/* ผู้ให้บริการ */}
@@ -64,20 +64,20 @@ export default function LandingPage() {
             alt="ผู้ให้บริการ"
             className="w-96 h-96 object-cover rounded-2xl shadow-lg"
           />
-          {/* ปุ่มเดิม: ถ้าจะไปหน้าล็อกอินจริง */}
-          {/* <button
-            onClick={() => navigate("/login2")}
+
+          {/* ไปหน้า Login สำหรับผู้ให้บริการ */}
+          <button
+            onClick={() => navigate("/login2", { state: { role: "provider" } })}
             className="mt-6 px-8 py-3 text-lg bg-white rounded-full text-gray-800 font-semibold shadow hover:bg-gray-100"
           >
             ลงชื่อเข้าใช้งานสำหรับผู้ให้บริการ
-          </button> */}
+          </button>
 
-          {/* โหมดทดลอง: เข้าใช้งานได้ทันที */}
+          {/* ปุ่มทดลองใช้ทันที */}
           <button
             onClick={() => quickLogin("provider")}
-            className="mt-6 px-8 py-3 text-lg bg-white rounded-full text-gray-800 font-semibold shadow hover:bg-gray-100"
+            className="mt-3 text-sm text-green-700 underline underline-offset-4 hover:text-green-800"
           >
-            ลงชื่อเข้าใช้งานสำหรับผู้ให้บริการ
           </button>
         </div>
       </div>

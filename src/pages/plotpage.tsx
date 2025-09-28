@@ -1,4 +1,4 @@
-import { FiFilter, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiFilter, FiPlus, FiTrash2, FiMapPin, FiLayers, FiDroplet } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
@@ -9,13 +9,13 @@ interface Plot {
   user_id: number;
   name: string;
   location: string;
-  size: string;
-  moisture: string;
+  size: string;       // รองรับทั้ง "3" หรือ "3 ไร่"
+  moisture: string;   // "45" หรือ "45%"
   tree_health: string;
-  fertilizer: string;
-  status: string;  // ไม่แสดงแล้ว แต่ยังคง type ไว้
+  fertilizer: string; // "30" หรือ "30%"
+  status: string;     // ไม่ใช้แล้ว แต่คง type ไว้
   updated: string;
-  color: string;
+  color: string;      // ใช้ทำแถบสีซ้ายการ์ด
 }
 
 type SensorData = {
@@ -40,7 +40,9 @@ export default function PlotPage() {
   useEffect(() => {
     const fetchPlots = async () => {
       try {
-        const res = await axios.get<Plot[]>("http://localhost:3000/api/plots", { withCredentials: true });
+        const res = await axios.get<Plot[]>("http://localhost:3000/api/plots", {
+          withCredentials: true,
+        });
         setPlots(res.data.filter((plot) => !deletedIds.includes(plot.id)));
       } catch (err) {
         console.error("Error fetching plots:", err);
@@ -76,7 +78,7 @@ export default function PlotPage() {
     return s / plots.length;
   }, [plots]);
 
-  /* ====== Sensor (ย้ายมาวางในหน้านี้) ====== */
+  /* ====== Sensor ====== */
   const [sensor, setSensor] = useState<SensorData>({
     temperature: "--",
     humidity: "--",
@@ -114,118 +116,181 @@ export default function PlotPage() {
     <div className="min-h-screen bg-[#F5F3EE] text-gray-800 font-sans font-semibold">
       <main className="p-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">แปลงลำไยของฉัน</h2>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-green-900">แปลงลำไยของฉัน</h2>
           <button
             onClick={() => navigate("/addnewplot")}
-            className="flex items-center bg-green-600 text-white px-4 py-2 rounded shadow"
+            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 active:scale-[0.99] transition"
           >
-            <FiPlus className="mr-2" /> เพิ่มแปลงใหม่
+            <FiPlus /> เพิ่มแปลงใหม่
           </button>
         </div>
 
-        {/* Sensor Row (ใหม่) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <div className="bg-white p-4 rounded shadow text-center">
-            <p className="text-sm text-gray-600">อุณหภูมิ</p>
-            <p className="text-2xl font-semibold">{sensor.temperature}°C</p>
+        {/* Sensor Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-200 text-center">
+            <p className="text-xs text-gray-500">อุณหภูมิ</p>
+            <p className="mt-1 text-3xl font-extrabold text-green-700">{sensor.temperature}°C</p>
           </div>
-          <div className="bg-white p-4 rounded shadow text-center">
-            <p className="text-sm text-gray-600">ความชื้น</p>
-            <p className="text-2xl font-semibold">{sensor.humidity}%</p>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-200 text-center">
+            <p className="text-xs text-gray-500">ความชื้น</p>
+            <p className="mt-1 text-3xl font-extrabold text-green-700">{sensor.humidity}%</p>
           </div>
-          <div className="bg-white p-4 rounded shadow text-center">
-            <p className="text-sm text-gray-600">PM2.5</p>
-            <p className="text-2xl font-semibold">{sensor.pm25}</p>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-200 text-center">
+            <p className="text-xs text-gray-500">PM2.5</p>
+            <p className="mt-1 text-3xl font-extrabold text-green-700">{sensor.pm25}</p>
           </div>
         </div>
-        <div className="mb-6 text-right text-xs text-gray-500">
+        <div className="mb-6 flex justify-end">
           {sensorErr ? (
-            <span className="text-rose-500">{sensorErr}</span>
-          ) : sensor.timestamp ? (
-            <>อัปเดตล่าสุด: {new Date(sensor.timestamp).toLocaleString("th-TH")}</>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-rose-50 text-rose-600 border border-rose-200">
+              {sensorErr}
+            </span>
           ) : (
-            <>อัปเดตล่าสุด: —</>
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">
+              อัปเดตล่าสุด: {sensor.timestamp ? new Date(sensor.timestamp).toLocaleString("th-TH") : "—"}
+            </span>
           )}
         </div>
 
-        {/* Summary Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="text-sm text-gray-500">จำนวนแปลงทั้งหมด</div>
-            <div className="text-2xl font-bold text-teal-700">{totalPlots.toLocaleString()} แปลง</div>
+        {/* Filter Bar (ตำแหน่งแปลง) */}
+        <div className="bg-white border-2 border-emerald-500/60 rounded-xl p-4 shadow-sm mb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-700">
+                <FiMapPin />
+              </span>
+              <select className="border rounded-lg px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option>ตำแหน่ง</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-700">
+                <FiLayers />
+              </span>
+              <select className="border rounded-lg px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option>เรียงตาม</option>
+                <option>อัปเดตล่าสุด</option>
+                <option>เรียงตามชื่อ</option>
+              </select>
+            </div>
+
+            <button className="ml-auto md:ml-0 inline-flex items-center gap-2 border border-emerald-400 text-emerald-700 px-4 py-2 rounded-lg text-sm bg-emerald-50 hover:bg-emerald-100 transition">
+              <FiFilter /> กรอง
+            </button>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="text-sm text-gray-500">พื้นที่รวม</div>
-            <div className="text-2xl font-bold text-teal-700">
-              {totalAreaRai.toLocaleString(undefined, { maximumFractionDigits: 2 })} ไร่
+        </div>
+
+        {/* Summary Bar: ใต้ตำแหน่งแปลง + กรอบเขียว + ไอคอน */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <div className="rounded-xl p-4 bg-white shadow-sm border-2 border-emerald-500/70">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                <FiLayers />
+              </span>
+              จำนวนแปลงทั้งหมด
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-700 tracking-tight">
+              {totalPlots.toLocaleString()} <span className="text-base font-semibold">แปลง</span>
             </div>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="text-sm text-gray-500">ความชื้นเฉลี่ย</div>
-            <div className="text-2xl font-bold text-teal-700">
+
+          <div className="rounded-xl p-4 bg-white shadow-sm border-2 border-emerald-500/70">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                <FiMapPin />
+              </span>
+              พื้นที่รวม
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-700 tracking-tight">
+              {totalAreaRai.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+              <span className="text-base font-semibold">ไร่</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-4 bg-white shadow-sm border-2 border-emerald-500/70">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                <FiDroplet />
+              </span>
+              ความชื้นเฉลี่ย
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-700 tracking-tight">
               {avgMoisture.toLocaleString(undefined, { maximumFractionDigits: 1 })}%
             </div>
           </div>
         </div>
 
-        {/* Filter Bar (ตัด “สถานะ” ออกตามที่ขอ) */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <select className="border rounded px-4 py-2 bg-white text-sm">
-            <option>ตำแหน่ง</option>
-          </select>
-          <select className="border rounded px-4 py-2 bg-white text-sm">
-            <option>เรียงตาม</option>
-            <option>อัปเดตล่าสุด</option>
-            <option>เรียงตามชื่อ</option>
-          </select>
-          <button className="flex items-center gap-1 border px-4 py-2 rounded text-sm bg-white">
-            <FiFilter /> กรอง
-          </button>
-        </div>
-
-        {/* Plot Cards (เอาป้าย/สีสถานะออก) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plots.map((plot) => (
-            <div key={plot.id} className="relative rounded-xl shadow bg-white p-4 border">
-              {/* ปุ่มลบ */}
+        {/* Plot Cards */}
+        {plots.length === 0 ? (
+          <div className="bg-white border border-dashed border-emerald-400 rounded-xl p-10 text-center text-emerald-700">
+            ยังไม่มีแปลงที่จะแสดง
+            <div className="mt-3">
               <button
-                onClick={() => handleDelete(plot.id)}
-                className="absolute top-3 right-3 text-red-500 hover:text-red-700"
-                title="ลบแปลงนี้"
+                onClick={() => navigate("/addnewplot")}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition"
               >
-                <FiTrash2 />
+                <FiPlus /> เพิ่มแปลงแรกของคุณ
               </button>
-
-              <div className="flex justify-between items-center mb-1">
-                <h3 className="font-bold text-lg">{plot.name}</h3>
-                {/* สถานะถูกถอดออกตามที่ขอ */}
-              </div>
-
-              <p className="text-sm text-gray-600 mb-2">{plot.location}</p>
-              <p className="text-sm mb-4">ขนาด: {plot.size} ไร่</p>
-
-              <div className="text-sm grid grid-cols-3 gap-2 mb-4">
-                <div>
-                  ความชื้น<br />
-                  <strong>{plot.moisture}%</strong>
-                </div>
-                <div>
-                  ต้น<br />
-                  <strong>{plot.tree_health}</strong>
-                </div>
-                <div>
-                  ปุ๋ย<br />
-                  <strong>{plot.fertilizer}%</strong>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-400 text-right">
-                อัปเดตล่าสุด: {new Date(plot.updated).toLocaleString("th-TH")}
-              </p>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {plots.map((plot) => {
+              const leftStripe = (plot.color || "#10B981"); // emerald-500 fallback
+              const sizeText = `${(plot.size || "").toString().replace(/\s*ไร่$/,"")} ไร่`;
+              const moistureText = `${(plot.moisture || "").toString().replace(/\s*%$/,"")}%`;
+              const fertText = `${(plot.fertilizer || "").toString().replace(/\s*%$/,"")}%`;
+
+              return (
+                <div
+                  key={plot.id}
+                  className="relative rounded-xl shadow-sm bg-white border hover:shadow-md transition"
+                  style={{ borderLeft: `8px solid ${leftStripe}` }}
+                >
+                  {/* ปุ่มลบ */}
+                  <button
+                    onClick={() => handleDelete(plot.id)}
+                    className="absolute top-3 right-3 text-red-500/80 hover:text-red-600"
+                    title="ลบแปลงนี้"
+                  >
+                    <FiTrash2 />
+                  </button>
+
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-bold text-lg text-gray-900 leading-tight">{plot.name}</h3>
+                    </div>
+
+                    <p className="inline-flex items-center gap-1 text-xs text-gray-600 mb-2">
+                      <FiMapPin /> {plot.location}
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2 mt-3 mb-4 text-sm">
+                      <div className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2 text-emerald-800">
+                        <div className="text-[11px] text-emerald-600">ขนาด</div>
+                        <div className="font-bold">{sizeText}</div>
+                      </div>
+                      <div className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2 text-emerald-800">
+                        <div className="text-[11px] text-emerald-600">ความชื้น</div>
+                        <div className="font-bold">{moistureText}</div>
+                      </div>
+                      <div className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2 text-emerald-800">
+                        <div className="text-[11px] text-emerald-600">ปุ๋ย</div>
+                        <div className="font-bold">{fertText}</div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-gray-400 text-right">
+                      อัปเดตล่าสุด: {new Date(plot.updated).toLocaleString("th-TH")}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );

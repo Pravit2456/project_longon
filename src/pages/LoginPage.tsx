@@ -58,8 +58,8 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      // 👉 ไปหน้า dashboard (ปรับเส้นทางได้)
-      navigate("/dashboard", { replace: true });
+      // 👉 ไปหน้า  (ปรับเส้นทางได้)
+      navigate("/plot", { replace: true });
     } catch (err: any) {
       setError(err?.message || "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
     } finally {
